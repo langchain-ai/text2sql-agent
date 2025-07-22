@@ -1,6 +1,6 @@
 # text2sql-agent 🚀
 
-A powerful text-to-SQL agent that converts natural language queries into SQL statements using LangGraph and LangChain.
+A powerful text-to-SQL agent that converts natural language queries into SQL statements using LangGraph and LangChain
 
 ## 🛠️ Prerequisites
 

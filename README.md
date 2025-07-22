@@ -54,6 +54,27 @@ text2sql-agent/
 - **Dependencies**: All managed through `pyproject.toml` and `uv.lock`
 - **Environment Variables**: Configure in `.env` file
 
+## 🧪 Testing
+
+Run all tests:
+
+```bash
+uv run pytest tests/
+```
+
+Run specific test categories:
+
+- **Unit tests** (single nodes and utilities):
+  ```bash
+  uv run pytest -m single_node
+  uv run pytest -m utils
+  ```
+
+- **Integration tests**:
+  ```bash
+  uv run pytest -m integration
+  ```
+
 ## 📚 Examples
 
 Check out the `examples/` directory for usage examples and demonstrations of the text-to-SQL agent capabilities.

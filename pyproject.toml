@@ -100,3 +100,11 @@ packages = ["agents"]
 [tool.poe.tasks]
 pylint-local = "pylint agents/**/*.py"
 pylint-ci = "pylint --disable=C0114,C0115,C0116,C901 --exit-zero agents/**/*.py"
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests that depend on external systems like databases or APIs",
+    "single_node: marks tests for individual LangGraph nodes (unit-level)",
+    "utils: marks tests for internal utility functions like schema extraction",
+    "e2e: marks end-to-end tests that run the full graph with real data"
+]

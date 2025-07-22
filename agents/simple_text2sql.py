@@ -11,24 +11,17 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
-engine = get_engine_for_chinook_db()
-db = SQLDatabase(engine)
-
 class OverallState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
     schema: str
     sql: str
     records: List[dict]
-    answer: str
 
 class InputState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
 
 class OutputState(TypedDict):
-    answer: str
-    sql: str
-
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    messages: Annotated[list[AnyMessage], add_messages]
 
 qa_system_prompt = """
 You are an assistant that helps to form nice and human understandable answers.
@@ -57,47 +50,45 @@ Do not include any text except the generated SQL statement.
 You will have the full message history to help you answer the question, if you dont need to generate a sql query, just generate a sql query that will return an empty result.
 """
 
-def generate_sql(state: OverallState) -> dict:
-
-    last_message = state["messages"][-1]
-
-    prompt = """Generate a SQL query for the following question:
-    Question: {question}
-    Schema: {schema}
-    SQL:
-    """.format(question=last_message.content, schema=str(get_detailed_table_info()))
-
-    sql_query = llm.invoke([SystemMessage(sql_system_prompt)] + state["messages"] + [HumanMessage(prompt)])
-    # strip the sql query of triple backticks
-    try:
+def generate_sql(llm):
+    def _generate(state: OverallState) -> dict:
+        last_message = state["messages"][-1]
+        prompt = f"""Generate a SQL query for the following question:
+        Question: {last_message.content}
+        Schema: {get_detailed_table_info()}
+        SQL:
+        """
+        sql_query = llm.invoke([SystemMessage(sql_system_prompt)] + state["messages"] + [HumanMessage(prompt)])
         sql_query = sql_query.content.replace("```sql", "").replace("```", "")
-    except Exception as e:
-        print(f"Error stripping sql query: {e}")
-        sql_query = sql_query.content
-    return {"sql": sql_query}
+        return {"sql": sql_query}
+    return _generate
 
-def execute_sql(state: OverallState) -> dict:
-    records = db.run(state["sql"])
-    return {"records": records}
+def execute_sql(db):
+    def _execute(state: OverallState) -> dict:
+        records = db.run(state["sql"])
+        return {"records": records}
+    return _execute
 
-def generate_answer(state: OverallState) -> dict:
-    last_message = state["messages"][-1]
-    prompt = """Given the question: {question} and the database results: {records}, provide a concise answer.
-    """.format(question=last_message.content, records=state["records"])
+def generate_answer(llm):
+    def _answer(state: OverallState) -> dict:
+        last_message = state["messages"][-1]
+        prompt = f"Given the question: {last_message.content} and the database results: {state['records']}, provide a concise answer."
+        answer = llm.invoke([SystemMessage(qa_system_prompt)] + state["messages"] + [HumanMessage(prompt)])
+        return {"messages": [answer]}
+    return _answer
 
-    answer = llm.invoke([SystemMessage(qa_system_prompt)] + state["messages"] + [HumanMessage(prompt)])
-    return {"answer": answer.content}
+def create_agent(llm, db):
+    builder = StateGraph(OverallState, input_schema=InputState, output_schema=OutputState)
+    builder.add_node("generate_sql", generate_sql(llm))
+    builder.add_node("execute_sql", execute_sql(db))
+    builder.add_node("generate_answer", generate_answer(llm))
+    builder.add_edge(START, "generate_sql")
+    builder.add_edge("generate_sql", "execute_sql")
+    builder.add_edge("execute_sql", "generate_answer")
+    builder.add_edge("generate_answer", END)
+    return builder.compile()
 
 
-graph_builder = StateGraph(OverallState, input_schema=InputState, output_schema=OutputState)
-
-graph_builder.add_node("generate_sql", generate_sql)
-graph_builder.add_node("execute_sql", execute_sql)
-graph_builder.add_node("generate_answer", generate_answer)
-
-graph_builder.add_edge(START, "generate_sql")
-graph_builder.add_edge("generate_sql", "execute_sql")
-graph_builder.add_edge("execute_sql", "generate_answer")
-graph_builder.add_edge("generate_answer", END)
-
-agent = graph_builder.compile()
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+db = SQLDatabase(get_engine_for_chinook_db())
+agent = create_agent(llm, db)

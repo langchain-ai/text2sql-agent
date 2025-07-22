@@ -59,9 +59,28 @@ jobs:
     - name: Parse test results
       id: parse-results
       run: |
-        echo "unit_passed=$(grep -c 'tests passed' unit-results.xml || echo '0')" >> $GITHUB_OUTPUT
-        echo "integration_passed=$(grep -c 'tests passed' integration-results.xml || echo '0')" >> $GITHUB_OUTPUT
-        echo "coverage_passed=$(grep -c 'tests passed' coverage-results.xml || echo '0')" >> $GITHUB_OUTPUT
+        # Check if files exist and count tests
+        if [ -f unit-results.xml ]; then
+          UNIT_TESTS=$(grep -c '<testcase' unit-results.xml || echo '0')
+        else
+          UNIT_TESTS='0'
+        fi
+        
+        if [ -f integration-results.xml ]; then
+          INTEGRATION_TESTS=$(grep -c '<testcase' integration-results.xml || echo '0')
+        else
+          INTEGRATION_TESTS='0'
+        fi
+        
+        if [ -f coverage-results.xml ]; then
+          COVERAGE_TESTS=$(grep -c '<testcase' coverage-results.xml || echo '0')
+        else
+          COVERAGE_TESTS='0'
+        fi
+        
+        echo "unit_passed=$UNIT_TESTS" >> $GITHUB_OUTPUT
+        echo "integration_passed=$INTEGRATION_TESTS" >> $GITHUB_OUTPUT
+        echo "coverage_passed=$COVERAGE_TESTS" >> $GITHUB_OUTPUT
 
     - name: Comment PR with detailed results
       if: github.event_name == 'pull_request'

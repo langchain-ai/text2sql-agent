@@ -1,0 +1,102 @@
+[project]
+name = "text2sql_agent"
+version = "0.1.0"
+description = "Text2SQL Agent"
+authors = [
+    { name = "Marco Perini", email = "" },
+    { name = "Robert Xu", email = "" }
+]
+
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/langchain-ai/text2sql-agent"
+repository = "https://github.com/langchain-ai/text2sql-agent"
+documentation = "https://github.com/langchain-ai/textsql-agent/tree/main"
+keywords = [
+    "ai",
+    "artificial intelligence",
+    "gpt",
+    "machine learning",
+    "nlp",
+    "natural language processing",
+    "openai",
+    "langchain",
+    "langgraph",
+    "langsmith",
+    "text2sql",
+    "ai designer"
+    ]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.11,<4.0"
+
+dependencies = [
+    "python-dotenv>=1.0.1",
+    "langchain-openai>=0.3.18",
+    "langgraph>=0.4.7",
+    "langgraph-cli[inmem]>=0.0.19",
+    "langchain-anthropic>=0.3.13",
+    "langchain-community>=0.3.27",
+    "sqlalchemy>=2.0.41"
+]
+
+[project.optional-dependencies]
+docs = ["sphinx==6.0", "furo==2024.5.6"]
+
+[tool.uv]
+managed = true
+dev-dependencies = [
+    "pytest>=7.4.0",
+    "pytest-mock==3.14.0",
+    "pylint>=3.2.5",
+    "pytest-asyncio>=0.23.8",
+    "aioresponses>=0.7.7",
+    "responses>=0.25.3",
+    "pytest-sugar>=1.0.0",
+    "pytest-cov>=6.0.0",
+    "black>=24.10.0",
+    "mypy>=1.13.0",
+    "ruff>=0.8.0",
+    "isort>=5.13.2",
+    "pre-commit>=4.0.1",
+    "types-setuptools>=75.6.0.20241126",
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.5.46",
+    "mkdocstrings-python>=1.12.2",
+    "poethepoet>=0.31.1",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "C"]
+ignore = ["E203", "E501", "C901"]  # Ignore conflicts with Black and function complexity
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+disallow_untyped_calls = true
+ignore_missing_imports = true
+
+[build-system]
+requires = ["hatchling==1.26.3"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agents"]
+
+[tool.poe.tasks]
+pylint-local = "pylint agents/**/*.py"
+pylint-ci = "pylint --disable=C0114,C0115,C0116,C901 --exit-zero agents/**/*.py"

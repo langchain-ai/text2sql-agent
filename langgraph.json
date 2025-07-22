@@ -1,0 +1,8 @@
+{
+    "graphs": {
+        "simple_text2sql": "./agents/simple_text2sql.py:agent"
+    },
+    "env": ".env",
+    "python_version": "3.11",
+    "dependencies": ["./pyproject.toml"]
+}

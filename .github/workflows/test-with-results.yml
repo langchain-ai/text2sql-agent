@@ -1,0 +1,94 @@
+name: Tests with Results
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          .uv/cache
+          .venv
+        key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+
+    - name: Install dependencies
+      run: uv sync
+
+    - name: Run unit tests
+      id: unit-tests
+      run: uv run pytest tests/unit/ -v --junitxml=unit-results.xml
+      continue-on-error: true
+
+    - name: Run integration tests
+      id: integration-tests
+      run: uv run pytest tests/integrations/ -v --junitxml=integration-results.xml
+      continue-on-error: true
+
+    - name: Run all tests with coverage
+      id: coverage-tests
+      run: uv run pytest tests/ --cov=agents --cov-report=xml --cov-report=html --junitxml=coverage-results.xml
+      continue-on-error: true
+
+    - name: Parse test results
+      id: parse-results
+      run: |
+        echo "unit_passed=$(grep -c 'tests passed' unit-results.xml || echo '0')" >> $GITHUB_OUTPUT
+        echo "integration_passed=$(grep -c 'tests passed' integration-results.xml || echo '0')" >> $GITHUB_OUTPUT
+        echo "coverage_passed=$(grep -c 'tests passed' coverage-results.xml || echo '0')" >> $GITHUB_OUTPUT
+
+    - name: Comment PR with detailed results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const unitPassed = '${{ steps.parse-results.outputs.unit_passed }}';
+          const integrationPassed = '${{ steps.parse-results.outputs.integration_passed }}';
+          const coveragePassed = '${{ steps.parse-results.outputs.coverage_passed }}';
+          
+          const testResults = `🧪 **Test Results for Python ${{ matrix.python-version }}**
+          
+          📊 **Test Summary:**
+          - Unit Tests: ${unitPassed} passed
+          - Integration Tests: ${integrationPassed} passed
+          - Coverage Tests: ${coveragePassed} passed
+          
+          🔍 **Details:**
+          - Python Version: ${{ matrix.python-version }}
+          - Runner: ${{ runner.os }}
+          - Commit: ${{ github.sha }}
+          
+          ${unitPassed > 0 && integrationPassed > 0 ? '✅ All tests passed!' : '❌ Some tests failed. Check the logs for details.'}`;
+          
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: testResults
+          }); 

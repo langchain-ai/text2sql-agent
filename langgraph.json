@@ -4,5 +4,6 @@
     },
     "env": ".env",
     "python_version": "3.11",
-    "dependencies": ["./pyproject.toml"]
+    "dependencies": ["."],
+    "image_distro": "wolfi"
 }

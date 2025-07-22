@@ -12,6 +12,8 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
     - uses: actions/checkout@v4
@@ -44,13 +46,9 @@ jobs:
 
     - name: Run integration tests
       run: uv run pytest tests/integrations/ -v
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     - name: Run all tests with coverage
       run: uv run pytest tests/ --cov=agents --cov-report=xml --cov-report=html
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

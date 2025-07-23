@@ -1,4 +1,5 @@
 import pytest
+import json
 from langsmith import Client
 from openevals.llm import create_llm_as_judge
 from agents.simple_text2sql import generate_sql, llm
@@ -84,27 +85,21 @@ def test_sql_generation_evaluation():
     )
     
     assert experiment_results is not None
-    print(f"SQL Generation Evaluation completed. Results: {experiment_results}")
-    
-    # Fetch feedback scores and assert minimum thresholds
-    feedback = client.list_feedback(
-        run_ids=[r.id for r in client.list_runs(project_name=experiment_results.experiment_name)],
-    )
-    
-    # Test SQL correctness scores (boolean - should be at least 75% correct)
-    sql_correctness_feedback = [f for f in feedback if f.key == 'sql_correctness']
-    sql_correctness_scores = [f.score for f in sql_correctness_feedback if f.score is not None]
-    if sql_correctness_scores:
-        sql_correctness_percentage = sum(sql_correctness_scores) / len(sql_correctness_scores)
-        print(f"SQL Correctness Score: {sql_correctness_percentage:.2%} ({sum(sql_correctness_scores)}/{len(sql_correctness_scores)})")
-        assert sql_correctness_percentage >= 0.75, f"SQL correctness score {sql_correctness_percentage:.2%} is below 75% threshold"
-    
-    # Test SQL quality scores (1-5 scale - should be at least 3.0 average)
-    sql_quality_feedback = [f for f in feedback if f.key == 'sql_quality']
-    sql_quality_scores = [f.score for f in sql_quality_feedback if f.score is not None]
-    if sql_quality_scores:
-        sql_quality_average = sum(sql_quality_scores) / len(sql_quality_scores)
-        print(f"SQL Quality Score: {sql_quality_average:.2f}/5 (min: {min(sql_quality_scores)}, max: {max(sql_quality_scores)})")
-        assert sql_quality_average >= 3.0, f"SQL quality score {sql_quality_average:.2f} is below 3.0 threshold"
-    
-    print(f"✅ All SQL evaluation thresholds met! Processed {len(sql_correctness_scores)} correctness and {len(sql_quality_scores)} quality scores.") 
+    print(f"✅ Evaluation completed: {experiment_results.experiment_name}")
+
+    # Define scoring rules
+    criteria = {
+        "sql_correctness": ">=0.75",
+        "sql_quality": ">=3.0"
+    }
+
+    output_metadata = {
+        "experiment_name": experiment_results.experiment_name,
+        "criteria": criteria
+    }
+
+    # Save to JSON file
+    with open("evaluation_config.json", "w") as f:
+        json.dump(output_metadata, f)
+
+    print("✅ Saved evaluation config to evaluation_config.json")

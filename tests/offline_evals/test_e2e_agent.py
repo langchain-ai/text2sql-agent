@@ -1,3 +1,4 @@
+import json
 import pytest
 from langsmith import Client
 from openevals.llm import create_llm_as_judge
@@ -87,27 +88,21 @@ def test_e2e_evaluation():
     )
     
     assert experiment_results is not None
-    print(f"Evaluation completed. Results: {experiment_results}")
-    
-    # Fetch feedback scores and assert minimum thresholds
-    feedback = client.list_feedback(
-        run_ids=[r.id for r in client.list_runs(project_name=experiment_results.experiment_name)],
-    )
-    
-    # Test correctness scores (boolean - should be at least 80% correct)
-    correctness_feedback = [f for f in feedback if f.key == 'correctness']
-    correctness_scores = [f.score for f in correctness_feedback if f.score is not None]
-    if correctness_scores:
-        correctness_percentage = sum(correctness_scores) / len(correctness_scores)
-        print(f"Correctness Score: {correctness_percentage:.2%} ({sum(correctness_scores)}/{len(correctness_scores)})")
-        assert correctness_percentage >= 0.8, f"Correctness score {correctness_percentage:.2%} is below 80% threshold"
-    
-    # Test response quality scores (1-5 scale - should be at least 3.5 average)
-    quality_feedback = [f for f in feedback if f.key == 'response_quality']
-    quality_scores = [f.score for f in quality_feedback if f.score is not None]
-    if quality_scores:
-        quality_average = sum(quality_scores) / len(quality_scores)
-        print(f"Response Quality Score: {quality_average:.2f}/5 (min: {min(quality_scores)}, max: {max(quality_scores)})")
-        assert quality_average >= 3.5, f"Response quality score {quality_average:.2f} is below 3.5 threshold"
-    
-    print(f"✅ All evaluation thresholds met! Processed {len(correctness_scores)} correctness and {len(quality_scores)} quality scores.") 
+    print(f"✅ Evaluation completed: {experiment_results.experiment_name}")
+
+    # Define scoring rules for post-processing
+    criteria = {
+        "correctness": ">=0.8",
+        "response_quality": ">=3.5"
+    }
+
+    output_metadata = {
+        "experiment_name": experiment_results.experiment_name,
+        "criteria": criteria
+    }
+
+    # Save to JSON file for use in the reporter job
+    with open("evaluation_config.json", "w") as f:
+        json.dump(output_metadata, f)
+
+    print("✅ Saved evaluation config to evaluation_config.json")

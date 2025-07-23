@@ -63,6 +63,11 @@ jobs:
       run: uv run pytest tests/ --cov=agents --cov-report=xml --cov-report=html --junitxml=coverage-results.xml
       continue-on-error: true
 
+    - name: Run offline evaluations
+      id: offline-evals
+      run: uv run pytest -m evaluator -v --junitxml=evaluator-results.xml
+      continue-on-error: true
+
     - name: Parse test results
       id: parse-results
       run: |
@@ -85,9 +90,16 @@ jobs:
           COVERAGE_TESTS='0'
         fi
         
+        if [ -f evaluator-results.xml ]; then
+          EVALUATOR_TESTS=$(grep -c '<testcase' evaluator-results.xml || echo '0')
+        else
+          EVALUATOR_TESTS='0'
+        fi
+        
         echo "unit_passed=$UNIT_TESTS" >> $GITHUB_OUTPUT
         echo "integration_passed=$INTEGRATION_TESTS" >> $GITHUB_OUTPUT
         echo "coverage_passed=$COVERAGE_TESTS" >> $GITHUB_OUTPUT
+        echo "evaluator_passed=$EVALUATOR_TESTS" >> $GITHUB_OUTPUT
 
     - name: Comment PR with detailed results
       if: github.event_name == 'pull_request'
@@ -97,6 +109,7 @@ jobs:
           const unitPassed = '${{ steps.parse-results.outputs.unit_passed }}';
           const integrationPassed = '${{ steps.parse-results.outputs.integration_passed }}';
           const coveragePassed = '${{ steps.parse-results.outputs.coverage_passed }}';
+          const evaluatorPassed = '${{ steps.parse-results.outputs.evaluator_passed }}';
           
           const testResults = `🧪 **Test Results for Python ${{ matrix.python-version }}**
           
@@ -104,6 +117,7 @@ jobs:
           - Unit Tests: ${unitPassed} passed
           - Integration Tests: ${integrationPassed} passed
           - Coverage Tests: ${coveragePassed} passed
+          - Offline Evaluations: ${evaluatorPassed} passed
           
           🔍 **Details:**
           - Python Version: ${{ matrix.python-version }}

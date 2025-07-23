@@ -73,7 +73,7 @@ jobs:
     - name: Install dependencies
       run: uv sync
     - name: Run unit tests
-      run: uv run pytest tests/unit/ -v --junitxml=unit-results.xml
+      run: uv run pytest tests/unit/ --junitxml=unit-results.xml
       continue-on-error: true
     - name: Upload unit test results
       uses: actions/upload-artifact@v4
@@ -113,7 +113,7 @@ jobs:
     - name: Install dependencies
       run: uv sync
     - name: Run integration tests
-      run: uv run pytest tests/integrations/ -v --junitxml=integration-results.xml
+      run: uv run pytest tests/integrations/ --junitxml=integration-results.xml
       continue-on-error: true
     - name: Upload integration test results
       uses: actions/upload-artifact@v4
@@ -155,7 +155,7 @@ jobs:
     - name: Install dependencies
       run: uv sync
     - name: Run evaluation tests
-      run: uv run pytest -m evaluator -v --junitxml=evaluator-results.xml
+      run: uv run pytest -m evaluator --junitxml=evaluator-results.xml
       continue-on-error: true
     - name: Upload evaluation test results
       uses: actions/upload-artifact@v4

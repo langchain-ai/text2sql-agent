@@ -96,10 +96,19 @@ jobs:
           EVALUATOR_TESTS='0'
         fi
         
+        # Generic evaluation results parsing
+        EVALUATION_RESULTS="{}"
+        
+        # Find all evaluation result JSON files and merge them
+        if ls *_evaluation_results.json 1> /dev/null 2>&1; then
+          EVALUATION_RESULTS=$(python -c "import json; import glob; import os; results = {}; [results.update({os.path.basename(f).replace('_evaluation_results.json', ''): json.load(open(f))}) for f in glob.glob('*_evaluation_results.json')]; print(json.dumps(results))")
+        fi
+        
         echo "unit_passed=$UNIT_TESTS" >> $GITHUB_OUTPUT
         echo "integration_passed=$INTEGRATION_TESTS" >> $GITHUB_OUTPUT
         echo "coverage_passed=$COVERAGE_TESTS" >> $GITHUB_OUTPUT
         echo "evaluator_passed=$EVALUATOR_TESTS" >> $GITHUB_OUTPUT
+        echo "evaluation_results=$EVALUATION_RESULTS" >> $GITHUB_OUTPUT
 
     - name: Comment PR with detailed results
       if: github.event_name == 'pull_request'
@@ -110,6 +119,54 @@ jobs:
           const integrationPassed = '${{ steps.parse-results.outputs.integration_passed }}';
           const coveragePassed = '${{ steps.parse-results.outputs.coverage_passed }}';
           const evaluatorPassed = '${{ steps.parse-results.outputs.evaluator_passed }}';
+          const evaluationResults = '${{ steps.parse-results.outputs.evaluation_results }}';
+          
+          // Parse evaluation results
+          let evaluationSection = '';
+          if (evaluationResults && evaluationResults !== '{}') {
+            try {
+              const results = JSON.parse(evaluationResults);
+              const evaluationLines = [];
+              
+              // Define thresholds for different metric types
+              const thresholds = {
+                'e2e_correctness': { threshold: 0.8, format: 'percentage', name: 'E2E Correctness' },
+                'e2e_quality': { threshold: 3.5, format: 'rating', name: 'E2E Quality' },
+                'sql_correctness': { threshold: 0.75, format: 'percentage', name: 'SQL Correctness' },
+                'sql_quality': { threshold: 3.0, format: 'rating', name: 'SQL Quality' }
+              };
+              
+              // Process each evaluator
+              Object.entries(results).forEach(([evaluator, data]) => {
+                Object.entries(data).forEach(([metric, value]) => {
+                  if (typeof value === 'number' && !metric.includes('_passed')) {
+                    const config = thresholds[metric];
+                    if (config) {
+                      const status = value >= config.threshold ? '✅' : '❌';
+                      let formattedValue;
+                      let thresholdDisplay;
+                      
+                      if (config.format === 'percentage') {
+                        formattedValue = `${(value * 100).toFixed(1)}%`;
+                        thresholdDisplay = `${(config.threshold * 100).toFixed(0)}%`;
+                      } else if (config.format === 'rating') {
+                        formattedValue = `${value.toFixed(1)}/5`;
+                        thresholdDisplay = config.threshold.toFixed(1);
+                      }
+                      
+                      evaluationLines.push(`- ${config.name}: ${status} ${formattedValue} (threshold: ${thresholdDisplay})`);
+                    }
+                  }
+                });
+              });
+              
+              if (evaluationLines.length > 0) {
+                evaluationSection = `\n🤖 **Agent Performance Evaluation:**\n${evaluationLines.join('\n')}`;
+              }
+            } catch (e) {
+              console.error('Error parsing evaluation results:', e);
+            }
+          }
           
           const testResults = `🧪 **Test Results for Python ${{ matrix.python-version }}**
           
@@ -117,7 +174,7 @@ jobs:
           - Unit Tests: ${unitPassed} passed
           - Integration Tests: ${integrationPassed} passed
           - Coverage Tests: ${coveragePassed} passed
-          - Offline Evaluations: ${evaluatorPassed} passed
+          - Offline Evaluations: ${evaluatorPassed} passed${evaluationSection}
           
           🔍 **Details:**
           - Python Version: ${{ matrix.python-version }}

@@ -76,7 +76,7 @@ jobs:
       run: uv run pytest tests/unit/ -v --junitxml=unit-results.xml
       continue-on-error: true
     - name: Upload unit test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: unit-test-results
         path: unit-results.xml
@@ -116,7 +116,7 @@ jobs:
       run: uv run pytest tests/integrations/ -v --junitxml=integration-results.xml
       continue-on-error: true
     - name: Upload integration test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: integration-test-results
         path: integration-results.xml
@@ -158,7 +158,7 @@ jobs:
       run: uv run pytest -m evaluator -v --junitxml=evaluator-results.xml
       continue-on-error: true
     - name: Upload evaluation test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: evaluation-test-results
         path: evaluator-results.xml
@@ -169,15 +169,15 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
     - name: Download unit test results
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: unit-test-results
     - name: Download integration test results
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: integration-test-results
     - name: Download evaluation test results
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: evaluation-test-results
     - name: Parse test results

@@ -16,7 +16,7 @@ First, ensure you have `uv` installed. Then run:
 uv sync
 ```
 
-This will create a virtual environment and install all project dependencies.
+This will create a virtual environment and install all project dependencies
 
 ### 2. Environment Configuration
 

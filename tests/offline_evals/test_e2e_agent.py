@@ -101,8 +101,9 @@ def test_e2e_evaluation():
         "criteria": criteria
     }
 
-    # Save to JSON file for use in the reporter job
-    with open("evaluation_config.json", "w") as f:
+    safe_name = experiment_results.experiment_name.replace(":", "-").replace("/", "-")
+    config_filename = f"evaluation_config__{safe_name}.json"
+    with open(config_filename, "w") as f:
         json.dump(output_metadata, f)
 
-    print("✅ Saved evaluation config to evaluation_config.json")
+    print(f"::set-output name=config_filename::{config_filename}")

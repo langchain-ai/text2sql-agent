@@ -161,14 +161,14 @@ jobs:
         name: evaluation-test-results
         path: evaluator-results.xml
 
-    # 🔧 NEW: Upload evaluation config JSON (LangSmith experiment name + criteria)
+    # Upload evaluation config JSON (LangSmith experiment name + criteria)
     - name: Upload LangSmith evaluation config
       uses: actions/upload-artifact@v4
       with:
-        name: langsmith-eval-config
-        path: evaluation_config.json
+        name: langsmith-eval-configs
+        path: evaluation_config__*.json
 
-# 🔧 NEW JOB: Post LangSmith evaluation feedback as a PR comment
+# Post LangSmith evaluation feedback as a PR comment
   evaluation-report:
     needs: evaluation-tests
     runs-on: ubuntu-latest
@@ -183,16 +183,18 @@ jobs:
       with:
         python-version: "3.11"
 
-    - name: Download LangSmith evaluation config
+    - name: Download all LangSmith configs
       uses: actions/download-artifact@v4
       with:
-        name: langsmith-eval-config
+        name: langsmith-eval-configs
 
     - name: Install LangSmith SDK
       run: pip install langsmith
 
     - name: Run LangSmith evaluation report
-      run: python .github/scripts/report_eval.py
+      run: |
+        python .github/scripts/report_eval.py evaluation_config__*.json
+    
 
     - name: Comment PR with evaluation summary
       uses: actions/github-script@v7
@@ -247,117 +249,3 @@ jobs:
       with:
         name: e2e-test-results
         path: e2e-results.xml
-
-  report-results:
-    needs: [unit-tests, integration-tests, evaluation-tests, e2e-tests]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    continue-on-error: true
-    steps:
-    - name: Download unit test results
-      uses: actions/download-artifact@v4
-      with:
-        name: unit-test-results
-    - name: Download integration test results
-      uses: actions/download-artifact@v4
-      with:
-        name: integration-test-results
-    - name: Download evaluation test results
-      uses: actions/download-artifact@v4
-      with:
-        name: evaluation-test-results
-    - name: Download e2e test results
-      uses: actions/download-artifact@v4
-      with:
-        name: e2e-test-results
-    - name: Parse test results
-      id: parse-results
-      run: |
-        # Check if files exist and count tests
-        if [ -f unit-results.xml ]; then
-          UNIT_TESTS=$(grep -c '<testcase' unit-results.xml || echo '0')
-        else
-          UNIT_TESTS='0'
-        fi
-        
-        if [ -f integration-results.xml ]; then
-          INTEGRATION_TESTS=$(grep -c '<testcase' integration-results.xml || echo '0')
-        else
-          INTEGRATION_TESTS='0'
-        fi
-        
-        if [ -f evaluator-results.xml ]; then
-          EVALUATOR_TESTS=$(grep -c '<testcase' evaluator-results.xml || echo '0')
-        else
-          EVALUATOR_TESTS='0'
-        fi
-        
-        if [ -f e2e-results.xml ]; then
-          E2E_TESTS=$(grep -c '<testcase' e2e-results.xml || echo '0')
-        else
-          E2E_TESTS='0'
-        fi
-        
-        echo "unit_passed=$UNIT_TESTS" >> $GITHUB_OUTPUT
-        echo "integration_passed=$INTEGRATION_TESTS" >> $GITHUB_OUTPUT
-        echo "evaluator_passed=$EVALUATOR_TESTS" >> $GITHUB_OUTPUT
-        echo "e2e_passed=$E2E_TESTS" >> $GITHUB_OUTPUT
-    - name: Comment PR with detailed results
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const unitPassed = '${{ steps.parse-results.outputs.unit_passed }}';
-          const integrationPassed = '${{ steps.parse-results.outputs.integration_passed }}';
-          const evaluatorPassed = '${{ steps.parse-results.outputs.evaluator_passed }}';
-          const e2ePassed = '${{ steps.parse-results.outputs.e2e_passed }}';
-          
-          // Read XML files and format them for display
-          const fs = require('fs');
-          
-          let xmlSections = '';
-          
-          // Add unit test results
-          if (fs.existsSync('unit-results.xml')) {
-            const unitXml = fs.readFileSync('unit-results.xml', 'utf8');
-            xmlSections += `\n\n📋 **Unit Test Results:**\n\`\`\`xml\n${unitXml}\n\`\`\``;
-          }
-          
-          // Add integration test results
-          if (fs.existsSync('integration-results.xml')) {
-            const integrationXml = fs.readFileSync('integration-results.xml', 'utf8');
-            xmlSections += `\n\n📋 **Integration Test Results:**\n\`\`\`xml\n${integrationXml}\n\`\`\``;
-          }
-          
-          // Add evaluator test results
-          if (fs.existsSync('evaluator-results.xml')) {
-            const evaluatorXml = fs.readFileSync('evaluator-results.xml', 'utf8');
-            xmlSections += `\n\n📋 **Evaluation Test Results:**\n\`\`\`xml\n${evaluatorXml}\n\`\`\``;
-          }
-          
-          // Add e2e test results
-          if (fs.existsSync('e2e-results.xml')) {
-            const e2eXml = fs.readFileSync('e2e-results.xml', 'utf8');
-            xmlSections += `\n\n📋 **E2E Test Results:**\n\`\`\`xml\n${e2eXml}\n\`\`\``;
-          }
-          
-          const testResults = `🧪 **Test Results for Python 3.11**
-          
-          📊 **Test Summary:**
-          - Unit Tests: ${unitPassed} passed
-          - Integration Tests: ${integrationPassed} passed
-          - E2E Tests: ${e2ePassed} passed
-          - Offline Evaluations: ${evaluatorPassed} passed
-          
-          🔍 **Details:**
-          - Python Version: 3.11
-          - Runner: ${{ runner.os }}
-          - Commit: ${{ github.sha }}
-          
-          ${unitPassed > 0 && integrationPassed > 0 ? '✅ All tests passed!' : '❌ Some tests failed. Check the logs for details.'}${xmlSections}`;
-          
-          await github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: testResults
-          }); 

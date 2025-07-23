@@ -19,6 +19,8 @@ jobs:
         python-version: ["3.11"]
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+      LANGSMITH_TRACING: ${{ secrets.LANGSMITH_TRACING }}
 
     steps:
     - uses: actions/checkout@v4

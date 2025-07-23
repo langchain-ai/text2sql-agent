@@ -91,6 +91,57 @@ If you enable the GitHub Actions workflow, make sure to set the following enviro
 
 The workflow will automatically run tests and evaluations on pull requests and pushes to main/develop branches.
 
+## 🔄 CI/CD Pipeline
+
+CI/CD pipeline to ensure quality and reliability through multiple testing layers and evaluations:
+
+```mermaid
+graph TD
+    A1[Code or Graph Change] --> B1[Trigger CI Pipeline]
+    A2[Prompt Commit in PromptHub] --> B1
+    A3[Online Evaluation Alert] --> B1
+
+    B1 --> C1[Run Unit Tests on Nodes]
+    B1 --> C2[Run Integration Tests]
+    B1 --> C3[Run End to End Tests on Graph]
+
+    C1 --> D1[Run Offline Evaluations]
+    C2 --> D1
+    C3 --> D1
+
+    D1 --> E1[Evaluate with OpenEvals or AgentEvals]
+    D1 --> E2[Assertions: Hard and Soft]
+
+    E1 --> F1[Push to Staging Deployment]
+    E2 --> F1
+
+    F1 --> G1[Run Online Evaluations on Live Data]
+    G1 --> H1[Attach Scores to Traces]
+
+    H1 --> I1[If Quality Below Threshold]
+    I1 --> J1[Send to Annotation Queue]
+    I1 --> J2[Trigger Alert via Webhook]
+    I1 --> J3[Push Trace to Golden Dataset]
+
+    F1 --> K1[Promote to Production if All Pass]
+    J2 --> L1[Slack or PagerDuty Notification]
+
+    subgraph Manual Review
+        J1 --> M1[Human Labeling]
+        M1 --> J3
+    end
+```
+
+### Pipeline Stages
+
+1. **Trigger Sources**: Code changes, graph modifications, prompt updates, or online evaluation alerts
+2. **Testing Layers**: Unit tests for individual nodes, integration tests, and end-to-end graph testing
+3. **Evaluation**: Offline evaluations using OpenEvals/AgentEvals with hard and soft assertions
+4. **Staging**: Deployment to staging environment for live data testing
+5. **Quality Gates**: Online evaluations on production-like data with trace scoring
+6. **Production**: Promotion to production if all quality thresholds are met
+7. **Monitoring**: Continuous monitoring with alerts and manual review processes
+
 ## 📚 Examples
 
 Check out the `examples/` directory for usage examples and demonstrations of the text-to-SQL agent capabilities.

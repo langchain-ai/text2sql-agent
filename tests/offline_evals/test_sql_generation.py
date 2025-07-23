@@ -107,19 +107,4 @@ def test_sql_generation_evaluation():
         print(f"SQL Quality Score: {sql_quality_average:.2f}/5 (min: {min(sql_quality_scores)}, max: {max(sql_quality_scores)})")
         assert sql_quality_average >= 3.0, f"SQL quality score {sql_quality_average:.2f} is below 3.0 threshold"
     
-    print(f"✅ All SQL evaluation thresholds met! Processed {len(sql_correctness_scores)} correctness and {len(sql_quality_scores)} quality scores.")
-    
-    # Write evaluation results to file for GitHub Actions parsing
-    import json
-    import os
-    
-    eval_results = {
-        "sql_correctness": sql_correctness_percentage if sql_correctness_scores else 0.0,
-        "sql_quality": sql_quality_average if sql_quality_scores else 0.0,
-        "sql_correctness_passed": sql_correctness_percentage >= 0.75 if sql_correctness_scores else False,
-        "sql_quality_passed": sql_quality_average >= 3.0 if sql_quality_scores else False
-    }
-    
-    # Write to file that GitHub Actions can read
-    with open("sql_evaluation_results.json", "w") as f:
-        json.dump(eval_results, f) 
+    print(f"✅ All SQL evaluation thresholds met! Processed {len(sql_correctness_scores)} correctness and {len(sql_quality_scores)} quality scores.") 

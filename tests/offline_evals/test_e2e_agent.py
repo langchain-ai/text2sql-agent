@@ -110,19 +110,4 @@ def test_e2e_evaluation():
         print(f"Response Quality Score: {quality_average:.2f}/5 (min: {min(quality_scores)}, max: {max(quality_scores)})")
         assert quality_average >= 3.5, f"Response quality score {quality_average:.2f} is below 3.5 threshold"
     
-    print(f"✅ All evaluation thresholds met! Processed {len(correctness_scores)} correctness and {len(quality_scores)} quality scores.")
-    
-    # Write evaluation results to file for GitHub Actions parsing
-    import json
-    import os
-    
-    eval_results = {
-        "e2e_correctness": correctness_percentage if correctness_scores else 0.0,
-        "e2e_quality": quality_average if quality_scores else 0.0,
-        "e2e_correctness_passed": correctness_percentage >= 0.8 if correctness_scores else False,
-        "e2e_quality_passed": quality_average >= 3.5 if quality_scores else False
-    }
-    
-    # Write to file that GitHub Actions can read
-    with open("e2e_evaluation_results.json", "w") as f:
-        json.dump(eval_results, f) 
+    print(f"✅ All evaluation thresholds met! Processed {len(correctness_scores)} correctness and {len(quality_scores)} quality scores.") 

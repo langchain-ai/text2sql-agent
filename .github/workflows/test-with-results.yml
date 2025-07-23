@@ -12,29 +12,23 @@ permissions:
   issues: write
 
 jobs:
-  test:
+  setup:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.11"]
-    env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
-      LANGSMITH_TRACING: ${{ secrets.LANGSMITH_TRACING }}
-
+    outputs:
+      python-version: ${{ matrix.python-version }}
     steps:
     - uses: actions/checkout@v4
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-
     - name: Install uv
       uses: astral-sh/setup-uv@v1
       with:
         version: "latest"
-
     - name: Cache uv dependencies
       uses: actions/cache@v3
       with:
@@ -44,30 +38,148 @@ jobs:
         key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-uv-
-
     - name: Install dependencies
       run: uv sync
 
+  unit-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+      LANGSMITH_TRACING: ${{ secrets.LANGSMITH_TRACING }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+    - name: Cache uv dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          .uv/cache
+          .venv
+        key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+    - name: Install dependencies
+      run: uv sync
     - name: Run unit tests
-      id: unit-tests
       run: uv run pytest tests/unit/ -v --junitxml=unit-results.xml
       continue-on-error: true
+    - name: Upload unit test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: unit-test-results
+        path: unit-results.xml
 
+  integration-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+      LANGSMITH_TRACING: ${{ secrets.LANGSMITH_TRACING }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+    - name: Cache uv dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          .uv/cache
+          .venv
+        key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+    - name: Install dependencies
+      run: uv sync
     - name: Run integration tests
-      id: integration-tests
       run: uv run pytest tests/integrations/ -v --junitxml=integration-results.xml
       continue-on-error: true
+    - name: Upload integration test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: integration-test-results
+        path: integration-results.xml
 
-    - name: Run all tests with coverage
-      id: coverage-tests
-      run: uv run pytest tests/ --cov=agents --cov-report=xml --cov-report=html --junitxml=coverage-results.xml
-      continue-on-error: true
 
-    - name: Run offline evaluations
-      id: offline-evals
+
+  evaluation-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+      LANGSMITH_TRACING: ${{ secrets.LANGSMITH_TRACING }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+    - name: Cache uv dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          .uv/cache
+          .venv
+        key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+    - name: Install dependencies
+      run: uv sync
+    - name: Run evaluation tests
       run: uv run pytest -m evaluator -v --junitxml=evaluator-results.xml
       continue-on-error: true
+    - name: Upload evaluation test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: evaluation-test-results
+        path: evaluator-results.xml
 
+  report-results:
+    needs: [unit-tests, integration-tests, evaluation-tests]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+    - name: Download unit test results
+      uses: actions/download-artifact@v3
+      with:
+        name: unit-test-results
+    - name: Download integration test results
+      uses: actions/download-artifact@v3
+      with:
+        name: integration-test-results
+    - name: Download evaluation test results
+      uses: actions/download-artifact@v3
+      with:
+        name: evaluation-test-results
     - name: Parse test results
       id: parse-results
       run: |
@@ -84,104 +196,59 @@ jobs:
           INTEGRATION_TESTS='0'
         fi
         
-        if [ -f coverage-results.xml ]; then
-          COVERAGE_TESTS=$(grep -c '<testcase' coverage-results.xml || echo '0')
-        else
-          COVERAGE_TESTS='0'
-        fi
-        
         if [ -f evaluator-results.xml ]; then
           EVALUATOR_TESTS=$(grep -c '<testcase' evaluator-results.xml || echo '0')
         else
           EVALUATOR_TESTS='0'
         fi
         
-        # Generic evaluation results parsing
-        EVALUATION_RESULTS="{}"
-        
-        # Find all evaluation result JSON files and merge them
-        if ls *_evaluation_results.json 1> /dev/null 2>&1; then
-          EVALUATION_RESULTS=$(python -c "import json; import glob; import os; results = {}; [results.update({os.path.basename(f).replace('_evaluation_results.json', ''): json.load(open(f))}) for f in glob.glob('*_evaluation_results.json')]; print(json.dumps(results))")
-        fi
-        
         echo "unit_passed=$UNIT_TESTS" >> $GITHUB_OUTPUT
         echo "integration_passed=$INTEGRATION_TESTS" >> $GITHUB_OUTPUT
-        echo "coverage_passed=$COVERAGE_TESTS" >> $GITHUB_OUTPUT
         echo "evaluator_passed=$EVALUATOR_TESTS" >> $GITHUB_OUTPUT
-        echo "evaluation_results=$EVALUATION_RESULTS" >> $GITHUB_OUTPUT
-
     - name: Comment PR with detailed results
-      if: github.event_name == 'pull_request'
       uses: actions/github-script@v7
       with:
         script: |
           const unitPassed = '${{ steps.parse-results.outputs.unit_passed }}';
           const integrationPassed = '${{ steps.parse-results.outputs.integration_passed }}';
-          const coveragePassed = '${{ steps.parse-results.outputs.coverage_passed }}';
           const evaluatorPassed = '${{ steps.parse-results.outputs.evaluator_passed }}';
-          const evaluationResults = '${{ steps.parse-results.outputs.evaluation_results }}';
           
-          // Parse evaluation results
-          let evaluationSection = '';
-          if (evaluationResults && evaluationResults !== '{}') {
-            try {
-              const results = JSON.parse(evaluationResults);
-              const evaluationLines = [];
-              
-              // Define thresholds for different metric types
-              const thresholds = {
-                'e2e_correctness': { threshold: 0.8, format: 'percentage', name: 'E2E Correctness' },
-                'e2e_quality': { threshold: 3.5, format: 'rating', name: 'E2E Quality' },
-                'sql_correctness': { threshold: 0.75, format: 'percentage', name: 'SQL Correctness' },
-                'sql_quality': { threshold: 3.0, format: 'rating', name: 'SQL Quality' }
-              };
-              
-              // Process each evaluator
-              Object.entries(results).forEach(([evaluator, data]) => {
-                Object.entries(data).forEach(([metric, value]) => {
-                  if (typeof value === 'number' && !metric.includes('_passed')) {
-                    const config = thresholds[metric];
-                    if (config) {
-                      const status = value >= config.threshold ? '✅' : '❌';
-                      let formattedValue;
-                      let thresholdDisplay;
-                      
-                      if (config.format === 'percentage') {
-                        formattedValue = `${(value * 100).toFixed(1)}%`;
-                        thresholdDisplay = `${(config.threshold * 100).toFixed(0)}%`;
-                      } else if (config.format === 'rating') {
-                        formattedValue = `${value.toFixed(1)}/5`;
-                        thresholdDisplay = config.threshold.toFixed(1);
-                      }
-                      
-                      evaluationLines.push(`- ${config.name}: ${status} ${formattedValue} (threshold: ${thresholdDisplay})`);
-                    }
-                  }
-                });
-              });
-              
-              if (evaluationLines.length > 0) {
-                evaluationSection = `\n🤖 **Agent Performance Evaluation:**\n${evaluationLines.join('\n')}`;
-              }
-            } catch (e) {
-              console.error('Error parsing evaluation results:', e);
-            }
+          // Read XML files and format them for display
+          const fs = require('fs');
+          
+          let xmlSections = '';
+          
+          // Add unit test results
+          if (fs.existsSync('unit-results.xml')) {
+            const unitXml = fs.readFileSync('unit-results.xml', 'utf8');
+            xmlSections += `\n\n📋 **Unit Test Results:**\n\`\`\`xml\n${unitXml}\n\`\`\``;
           }
           
-          const testResults = `🧪 **Test Results for Python ${{ matrix.python-version }}**
+          // Add integration test results
+          if (fs.existsSync('integration-results.xml')) {
+            const integrationXml = fs.readFileSync('integration-results.xml', 'utf8');
+            xmlSections += `\n\n📋 **Integration Test Results:**\n\`\`\`xml\n${integrationXml}\n\`\`\``;
+          }
+          
+          // Add evaluator test results
+          if (fs.existsSync('evaluator-results.xml')) {
+            const evaluatorXml = fs.readFileSync('evaluator-results.xml', 'utf8');
+            xmlSections += `\n\n📋 **Evaluation Test Results:**\n\`\`\`xml\n${evaluatorXml}\n\`\`\``;
+          }
+          
+          const testResults = `🧪 **Test Results for Python 3.11**
           
           📊 **Test Summary:**
           - Unit Tests: ${unitPassed} passed
           - Integration Tests: ${integrationPassed} passed
-          - Coverage Tests: ${coveragePassed} passed
-          - Offline Evaluations: ${evaluatorPassed} passed${evaluationSection}
+          - Offline Evaluations: ${evaluatorPassed} passed
           
           🔍 **Details:**
-          - Python Version: ${{ matrix.python-version }}
+          - Python Version: 3.11
           - Runner: ${{ runner.os }}
           - Commit: ${{ github.sha }}
           
-          ${unitPassed > 0 && integrationPassed > 0 ? '✅ All tests passed!' : '❌ Some tests failed. Check the logs for details.'}`;
+          ${unitPassed > 0 && integrationPassed > 0 ? '✅ All tests passed!' : '❌ Some tests failed. Check the logs for details.'}${xmlSections}`;
           
           await github.rest.issues.createComment({
             issue_number: context.issue.number,

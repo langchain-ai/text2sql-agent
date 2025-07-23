@@ -68,6 +68,8 @@ dev-dependencies = [
     "mkdocs-material>=9.5.46",
     "mkdocstrings-python>=1.12.2",
     "poethepoet>=0.31.1",
+    "langsmith[pytest]>=0.4.8",
+    "openevals>=0.1.0"
 ]
 
 [tool.black]
@@ -106,5 +108,6 @@ markers = [
     "integration: marks tests that depend on external systems like databases or APIs",
     "single_node: marks tests for individual LangGraph nodes (unit-level)",
     "utils: marks tests for internal utility functions like schema extraction",
-    "e2e: marks end-to-end tests that run the full graph with real data"
+    "e2e: marks end-to-end tests that run the full graph with real data",
+    "evaluator: marks tests that evaluate agent performance using LLM judges"
 ]

@@ -88,7 +88,6 @@ def create_agent(llm, db):
     builder.add_edge("generate_answer", END)
     return builder.compile()
 
-
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 db = SQLDatabase(get_engine_for_chinook_db())
 agent = create_agent(llm, db)

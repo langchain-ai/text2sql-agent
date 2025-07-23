@@ -5,56 +5,56 @@ load_dotenv(override=True)
 
 client = Client()
 
-# Create a dataset
+# Create a dataset for text2sql agent with Chinook music database
 examples = [
     {
         "inputs": {
-            "question": "How many songs do you have by James Brown",
+            "question": "How many songs do you have by Queen?",
         },
         "outputs": {
-            "response": "We have 20 songs by James Brown",
-            "trajectory": ["question_answering_agent", "lookup_track"]
+            "sql": "SELECT COUNT(*) FROM Track t JOIN Artist a ON t.AlbumId IN (SELECT AlbumId FROM Album WHERE ArtistId = a.ArtistId) WHERE a.Name = 'Queen'",
+            "response": "We have 15 songs by Queen in our database."
         }
     },
     {
         "inputs": {
-            "question": "My name is Aaron Mitchell and I'd like a refund.",
+            "question": "What are the top 5 most expensive tracks?",
         },
         "outputs": {
-            "response": "I need some more information to help you with the refund. Please specify your phone number, the invoice ID, or the line item IDs for the purchase you'd like refunded.",
-            "trajectory": ["refund_agent"],
+            "sql": "SELECT Name, UnitPrice FROM Track ORDER BY UnitPrice DESC LIMIT 5",
+            "response": "The top 5 most expensive tracks are: [list of tracks with prices]"
         }
     },
     {
         "inputs": {
-            "question": "My name is Aaron Mitchell and I'd like a refund on my Led Zeppelin purchases. My number is +1 (204) 452-6452",
+            "question": "How many albums does Led Zeppelin have?",
         },
         "outputs": {
-            "response": 'Which of the following purchases would you like to be refunded for?\n\n  invoice_line_id  track_name                        artist_name    purchase_date          quantity_purchased    price_per_unit\n-----------------  --------------------------------  -------------  -------------------  --------------------  ----------------\n              267  How Many More Times               Led Zeppelin   2009-08-06 00:00:00                     1              0.99\n              268  What Is And What Should Never Be  Led Zeppelin   2009-08-06 00:00:00                     1              0.99',
-            "trajectory": ["refund_agent", "lookup"],
-        },
+            "sql": "SELECT COUNT(*) FROM Album a JOIN Artist ar ON a.ArtistId = ar.ArtistId WHERE ar.Name = 'Led Zeppelin'",
+            "response": "Led Zeppelin has 14 albums in our database."
+        }
     },
     {
         "inputs": {
-            "question": "Who recorded Wish You Were Here again? What other albums of there's do you have?",
+            "question": "What is the total revenue from sales in 2010?",
         },
         "outputs": {
-            "response": "Wish You Were Here is an album by Pink Floyd",
-            "trajectory": ["question_answering_agent", "lookup_album"],
-        },
+            "sql": "SELECT SUM(Total) FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2010'",
+            "response": "The total revenue from sales in 2010 was $1,383.51."
+        }
     },
     {
         "inputs": {
-            "question": "I want a full refund for invoice 237",
+            "question": "Which customers have spent more than $100?",
         },
         "outputs": {
-            "response": "You have been refunded $0.99.",
-            "trajectory": ["refund_agent", "refund"],
+            "sql": "SELECT c.FirstName, c.LastName, SUM(i.Total) as TotalSpent FROM Customer c JOIN Invoice i ON c.CustomerId = i.CustomerId GROUP BY c.CustomerId HAVING SUM(i.Total) > 100 ORDER BY TotalSpent DESC",
+            "response": "Customers who have spent more than $100 include: [list of customers with their total spending]"
         }
     },
 ]
 
-dataset_name = "Text2SQL Agent: E2E"
+dataset_name = "text2sql-agent"
 
 if not client.has_dataset(dataset_name=dataset_name):
     dataset = client.create_dataset(dataset_name=dataset_name)

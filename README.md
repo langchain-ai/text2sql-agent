@@ -1,6 +1,6 @@
 # text2sql-agent 🚀
 
-A powerful text-to-SQL agent that converts natural language queries into SQL statements using LangGraph and LangChain.
+A powerful text-to-SQL agent that converts natural language queries into SQL statements using LangGraph and LangChain
 
 ## 🛠️ Prerequisites
 
@@ -74,6 +74,22 @@ Run specific test categories:
   ```bash
   uv run pytest -m integration
   ```
+
+- **Offline evaluations** (agent performance evaluation):
+  ```bash
+  uv run pytest -m evaluator
+  ```
+
+### GitHub Actions Environment Setup
+
+If you enable the GitHub Actions workflow, make sure to set the following environment variable in your repository secrets:
+
+- **`OPENAI_API_KEY`**: Your OpenAI API key
+- **`LANGSMITH_API_KEY`**: Your LangSmith API key
+- **`LANGSMITH_TRACING=true`**: Enable LangSmith tracing
+
+
+The workflow will automatically run tests and evaluations on pull requests and pushes to main/develop branches.
 
 ## 📚 Examples
 

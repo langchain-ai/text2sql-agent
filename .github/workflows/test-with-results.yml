@@ -191,12 +191,10 @@ jobs:
     - name: Install LangSmith SDK
       run: pip install langsmith
 
-    - name: Run reports for all configs
+    - name: Run LangSmith evaluation report
       run: |
-        for file in evaluation_config__*.json; do
-          echo "Processing $file"
-          python .github/scripts/report_eval.py "$file"
-        done
+        python .github/scripts/report_eval.py evaluation_config__*.json
+    
 
     - name: Comment PR with evaluation summary
       uses: actions/github-script@v7

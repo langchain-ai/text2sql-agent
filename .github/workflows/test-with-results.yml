@@ -1,4 +1,4 @@
-name: Tests with Results
+name: Comprehensive Tests
 
 on:
   push:
@@ -35,9 +35,9 @@ jobs:
         path: |
           .uv/cache
           .venv
-        key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+        key: ${{ runner.os }}-uv-comprehensive-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
-          ${{ runner.os }}-uv-
+          ${{ runner.os }}-uv-comprehensive-
     - name: Install dependencies
       run: uv sync
 
@@ -67,9 +67,9 @@ jobs:
         path: |
           .uv/cache
           .venv
-        key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+        key: ${{ runner.os }}-uv-comprehensive-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
-          ${{ runner.os }}-uv-
+          ${{ runner.os }}-uv-comprehensive-
     - name: Install dependencies
       run: uv sync
     - name: Run unit tests
@@ -107,9 +107,9 @@ jobs:
         path: |
           .uv/cache
           .venv
-        key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+        key: ${{ runner.os }}-uv-comprehensive-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
-          ${{ runner.os }}-uv-
+          ${{ runner.os }}-uv-comprehensive-
     - name: Install dependencies
       run: uv sync
     - name: Run integration tests
@@ -147,9 +147,9 @@ jobs:
         path: |
           .uv/cache
           .venv
-        key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+        key: ${{ runner.os }}-uv-comprehensive-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
-          ${{ runner.os }}-uv-
+          ${{ runner.os }}-uv-comprehensive-
     - name: Install dependencies
       run: uv sync
     - name: Run evaluation tests
@@ -236,9 +236,9 @@ jobs:
         path: |
           .uv/cache
           .venv
-        key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+        key: ${{ runner.os }}-uv-comprehensive-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
-          ${{ runner.os }}-uv-
+          ${{ runner.os }}-uv-comprehensive-
     - name: Install dependencies
       run: uv sync
     - name: Run e2e tests

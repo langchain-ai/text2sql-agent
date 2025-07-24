@@ -63,6 +63,7 @@ dev-dependencies = [
     "ruff>=0.8.0",
     "isort>=5.13.2",
     "pre-commit>=4.0.1",
+    "bandit>=1.8.6",
     "types-setuptools>=75.6.0.20241126",
     "langsmith[pytest]>=0.4.8",
     "openevals>=0.1.0"

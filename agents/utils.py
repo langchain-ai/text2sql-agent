@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 def get_engine_for_chinook_db():
     """Pull sql file, populate in-memory database, and create engine."""
     url = "https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_Sqlite.sql"
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
     sql_script = response.text
 
     connection = sqlite3.connect(":memory:", check_same_thread=False)
@@ -80,7 +80,7 @@ def get_detailed_table_info():
 
         # Get sample data (first 3 rows)
         try:
-            sample_query = f"SELECT * FROM {table_name} LIMIT 3"
+            sample_query = f"SELECT * FROM {table_name} LIMIT 3"  # nosec B608
             sample_result = db.run(sample_query)
             table_info["sample_data"] = sample_result
         except Exception as e:

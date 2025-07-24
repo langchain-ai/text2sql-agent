@@ -1,12 +1,17 @@
 import pytest
 from sqlalchemy import text
 
-from agents import utils
+from agents.utils import (
+    get_db_table_names,
+    get_detailed_table_info,
+    get_engine_for_chinook_db,
+    get_schema_overview,
+)
 
 
 @pytest.mark.utils
 def test_get_engine_for_chinook_db():
-    engine = utils.get_engine_for_chinook_db()
+    engine = get_engine_for_chinook_db()
     assert engine is not None
     with engine.connect() as conn:
         result = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
@@ -17,7 +22,7 @@ def test_get_engine_for_chinook_db():
 
 @pytest.mark.utils
 def test_get_db_table_names():
-    table_names = utils.get_db_table_names()
+    table_names = get_db_table_names()
     assert isinstance(table_names, list)
     assert "Album" in table_names
     assert "Track" in table_names
@@ -25,7 +30,7 @@ def test_get_db_table_names():
 
 @pytest.mark.utils
 def test_get_detailed_table_info():
-    detailed_info = utils.get_detailed_table_info()
+    detailed_info = get_detailed_table_info()
     assert isinstance(detailed_info, dict)
     assert "Album" in detailed_info
 
@@ -44,7 +49,7 @@ def test_get_detailed_table_info():
 
 @pytest.mark.utils
 def test_get_schema_overview():
-    overview = utils.get_schema_overview()
+    overview = get_schema_overview()
     assert isinstance(overview, dict)
     assert "Track" in overview
     track_schema = overview["Track"]

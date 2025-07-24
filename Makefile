@@ -1,6 +1,6 @@
 # Makefile for Project Automation
 
-.PHONY: install lint type-check test docs serve-docs build all clean
+.PHONY: install lint type-check test docs serve-docs build all clean security-scan format
 
 # Variables
 PACKAGE_NAME = agents
@@ -30,6 +30,16 @@ test:
 # Run Pre-Commit Hooks
 pre-commit:
 	uv run pre-commit run --all-files
+
+# Format Code (auto-fix)
+format:
+	uv run black $(PACKAGE_NAME) $(TEST_DIR)
+	uv run isort $(PACKAGE_NAME) $(TEST_DIR)
+	uv run ruff check --fix $(PACKAGE_NAME) $(TEST_DIR)
+
+# Security Scanning
+security-scan:
+	uv run bandit -r $(PACKAGE_NAME)/
 
 # Clean Up Generated Files
 clean:

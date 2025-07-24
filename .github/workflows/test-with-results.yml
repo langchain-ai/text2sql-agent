@@ -81,6 +81,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
       LANGSMITH_TRACING: ${{ secrets.LANGSMITH_TRACING }}
+      LANGSMITH_ENDPOINT: ${{ secrets.LANGSMITH_ENDPOINT }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -113,6 +114,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
       LANGSMITH_TRACING: ${{ secrets.LANGSMITH_TRACING }}
+      LANGSMITH_ENDPOINT: ${{ secrets.LANGSMITH_ENDPOINT }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -151,6 +153,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
       LANGSMITH_TRACING: ${{ secrets.LANGSMITH_TRACING }}
+      LANGSMITH_ENDPOINT: ${{ secrets.LANGSMITH_ENDPOINT }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -190,6 +193,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
       LANGSMITH_TRACING: ${{ secrets.LANGSMITH_TRACING }}
+      LANGSMITH_ENDPOINT: ${{ secrets.LANGSMITH_ENDPOINT }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -277,6 +281,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
       LANGSMITH_TRACING: ${{ secrets.LANGSMITH_TRACING }}
+      LANGSMITH_ENDPOINT: ${{ secrets.LANGSMITH_ENDPOINT }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}

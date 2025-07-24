@@ -31,13 +31,16 @@ This directory contains the CI/CD workflows for the text2sql-agent project. The 
 - **E2E Tests:** End-to-end workflow tests
 - **LangSmith Integration:** Automated evaluation reporting
 
-### 4. Security and Dependencies (`security-dependencies.yml`)
-**Triggers:** Weekly schedule, Manual dispatch
-**Purpose:** Security scanning and dependency management
+### 4. Docker Deployment (`new-lgp-deployment.yml`)
+**Triggers:** Push to main, Merged PRs to main
+**Purpose:** Docker image building and deployment
 
-- **Security Scanning:** Runs Bandit for security analysis
-- **Dependency Updates:** Checks for outdated packages
-- **Automated Issues:** Creates issues for dependency updates
+- **Docker Build:** Builds multi-platform Docker image
+- **Docker Push:** Pushes to Docker Hub registry
+- **LangChain Deployment:** Deploys to LangChain hosted platform
+- **Automated Tagging:** Creates semantic versioning tags
+
+
 
 ## Usage
 
@@ -53,9 +56,6 @@ make pre-commit
 # Test coverage (equivalent to test-coverage.yml)
 make test
 
-# Security scanning (equivalent to security-dependencies.yml)
-make security-scan
-
 # Format code (auto-fix)
 make format
 ```
@@ -64,7 +64,7 @@ make format
 The workflows run automatically on:
 - **Every PR:** Quality checks, test coverage, comprehensive tests
 - **Every push to main/develop:** All checks and tests
-- **Weekly:** Security scanning and dependency checks
+- **Push to main/Merged PRs:** Docker deployment to LangChain
 
 ### Required Secrets
 The following secrets must be configured in your GitHub repository:
@@ -73,6 +73,8 @@ The following secrets must be configured in your GitHub repository:
 - `LANGSMITH_API_KEY`: For LangSmith integration
 - `LANGSMITH_TRACING`: For LangSmith tracing
 - `CODECOV_TOKEN`: For coverage reporting
+- `DOCKER_USERNAME`: Your Docker Hub username
+- `DOCKER_PASSWORD`: Your Docker Hub access token
 
 ## Workflow Benefits
 
@@ -81,7 +83,7 @@ The following secrets must be configured in your GitHub repository:
 3. **Artifact Management:** Test results and reports are preserved as artifacts
 4. **PR Integration:** Automatic commenting and status reporting
 5. **Quality Gates:** Multiple layers of quality assurance
-6. **Security Focus:** Regular security scanning and dependency monitoring
+6. **Automated Deployment:** Docker images built and deployed automatically
 
 ## Troubleshooting
 

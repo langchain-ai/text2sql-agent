@@ -1,0 +1,171 @@
+name: Create New Deployment
+
+# Trigger the workflow on push or pull request merge to main
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
+
+# Set environment variables
+env:
+  PYTHON_VERSION: '3.11'
+  REGISTRY: docker.io  # Change to ghcr.io for GitHub Container Registry
+  IMAGE_NAME: perinim98/text2sql-agent  # Updated with your Docker username and project name
+
+jobs:
+  # Job 1: Run custom logic and tests
+  run-custom-logic:
+    if: false && (github.ref == 'refs/heads/main' || (github.event.pull_request.merged == true))
+    runs-on: ubuntu-latest
+
+    outputs:
+      should-deploy: ${{ steps.validation.outputs.deploy }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+        fi
+
+    - name: Run validation and tests
+      id: validation
+      run: |
+        echo "✅ Skipping validation tests - proceeding with deployment"
+        # Set output to indicate that deployment should proceed
+        echo "deploy=true" >> $GITHUB_OUTPUT
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Job 2: Build and push Docker image
+  build-and-push:
+    needs: run-custom-logic
+    if: needs.run-custom-logic.outputs.should-deploy == 'true'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write  # Required for pushing to GitHub Container Registry
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Step 1: Set up Docker Buildx (advanced Docker build features)
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    # Step 2: Log in to Docker registry
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # Step 3: Extract metadata for Docker tags and labels
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          # Branch-based tags
+          type=ref,event=branch
+          # SHA-based tags
+          type=sha,prefix={{branch}}-
+          # Latest tag for main branch
+          type=raw,value=latest,enable={{is_default_branch}}
+          # Semantic versioning (if you use git tags)
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+        labels: |
+          org.opencontainers.image.title=Text2SQL Agent
+          org.opencontainers.image.description=Text-to-SQL Agent built with LangGraph
+          org.opencontainers.image.vendor=Text2SQL Agent
+
+    # Step 4: Build and push Docker image
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./dockerfiles/Dockerfile  # Updated path to your Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        platforms: linux/amd64,linux/arm64  # Multi-platform build
+        cache-from: type=gha  # Use GitHub Actions cache
+        cache-to: type=gha,mode=max
+        build-args: |
+          PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+          BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+          VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
+    # Step 5: Output image details
+    - name: Output image details
+      run: |
+        echo "🐳 Docker image built and pushed successfully!"
+        echo "📦 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+        echo "🏷️  Tags: ${{ steps.meta.outputs.tags }}"
+        echo "📋 Digest: ${{ steps.build.outputs.digest }}"
+
+  # Job 3: Post-deployment actions (optional)
+  post-deployment:
+    needs: [run-custom-logic, build-and-push]
+    if: success()
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy notification
+      run: |
+        echo "✅ Deployment completed successfully!"
+        echo "🚀 New image available at: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+
+    # Deploy to LangChain hosted platform
+    - name: Trigger LangChain deployment
+      run: |
+        echo "🚀 Triggering deployment to LangChain hosted platform..."
+
+        response=$(curl -s -w "HTTPSTATUS:%{http_code}" \
+          https://gtm.smith.langchain.dev/api-host/v1/projects \
+          --request POST \
+          --header 'Content-Type: application/json' \
+          --header 'X-Api-Key: ${{ secrets.LANGSMITH_API_KEY }}' \
+          --data '{
+            "name": "text2sql-agent-${{ github.sha }}",
+            "lc_hosted": false,
+            "env_vars": [{"name": "OPENAI_API_KEY", "value": "${{ secrets.OPENAI_API_KEY }}", "type": "secret"}],
+            "deployment_type": "dev",
+            "shareable": false,
+            "image_path": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest",
+            "build_on_push": false
+          }')
+
+        # Extract HTTP status and response body
+        http_status=$(echo $response | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+        response_body=$(echo $response | sed -e 's/HTTPSTATUS\:.*//g')
+
+        # Check if deployment was successful
+        if [ $http_status -eq 200 ] || [ $http_status -eq 201 ]; then
+          echo "✅ LangChain deployment triggered successfully"
+          echo "📋 Response: $response_body"
+        else
+          echo "❌ LangChain deployment failed with status: $http_status"
+          echo "📋 Response: $response_body"
+          exit 1
+        fi

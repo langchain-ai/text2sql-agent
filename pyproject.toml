@@ -64,10 +64,6 @@ dev-dependencies = [
     "isort>=5.13.2",
     "pre-commit>=4.0.1",
     "types-setuptools>=75.6.0.20241126",
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.5.46",
-    "mkdocstrings-python>=1.12.2",
-    "poethepoet>=0.31.1",
     "langsmith[pytest]>=0.4.8",
     "openevals>=0.1.0"
 ]
@@ -98,10 +94,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["agents"]
-
-[tool.poe.tasks]
-pylint-local = "pylint agents/**/*.py"
-pylint-ci = "pylint --disable=C0114,C0115,C0116,C901 --exit-zero agents/**/*.py"
 
 [tool.pytest.ini_options]
 markers = [

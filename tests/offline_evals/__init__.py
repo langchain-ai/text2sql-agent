@@ -1,1 +1,1 @@
-# Evaluations package for text2sql agent 
+# Evaluations package for text2sql agent

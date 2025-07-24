@@ -1,7 +1,9 @@
-import pytest
 import json
+
+import pytest
 from langsmith import Client
 from openevals.llm import create_llm_as_judge
+
 from agents.simple_text2sql import generate_sql, llm
 from agents.utils import get_detailed_table_info
 
@@ -54,48 +56,50 @@ sql_quality_evaluator = create_llm_as_judge(
     model="openai:gpt-4o-mini",
 )
 
+
 def ls_sql_target(inputs: dict) -> dict:
     """LangSmith target function that generates SQL using the agent"""
     from langchain_core.messages import HumanMessage
-    
+
     sql_generator = generate_sql(llm)
-    
+
     # Mock state for SQL generation
     state = {
         "messages": [HumanMessage(content=inputs["question"])],
         "schema": get_detailed_table_info(),
         "sql": "",
-        "records": []
+        "records": [],
     }
-    
+
     result = sql_generator(state)
     return {"sql": result["sql"]}
+
 
 @pytest.mark.evaluator
 def test_sql_generation_evaluation():
     """Run SQL generation evaluation using LangSmith"""
-    
+
     # Run evaluation
     experiment_results = client.evaluate(
         ls_sql_target,  # Your SQL generation system
         data="text2sql-agent",  # The dataset to predict and grade over
-        evaluators=[sql_correctness_evaluator, sql_quality_evaluator],  # The evaluators to score the results
+        evaluators=[
+            sql_correctness_evaluator,
+            sql_quality_evaluator,
+        ],  # The evaluators to score the results
         max_concurrency=10,
         experiment_prefix="text2sql-agent-sql",  # A prefix for your experiment names
     )
-    
+
     assert experiment_results is not None
     print(f"✅ Evaluation completed: {experiment_results.experiment_name}")
 
     # Define scoring rules
-    criteria = {
-        "sql_correctness": ">=0.75",
-        "sql_quality": ">=3.0"
-    }
+    criteria = {"sql_correctness": ">=0.75", "sql_quality": ">=3.0"}
 
     output_metadata = {
         "experiment_name": experiment_results.experiment_name,
-        "criteria": criteria
+        "criteria": criteria,
     }
 
     safe_name = experiment_results.experiment_name.replace(":", "-").replace("/", "-")

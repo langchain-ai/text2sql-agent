@@ -1,9 +1,11 @@
 import json
+
 import pytest
+from langchain_core.messages import HumanMessage
 from langsmith import Client
 from openevals.llm import create_llm_as_judge
+
 from agents.simple_text2sql import agent
-from langchain_core.messages import HumanMessage
 
 # Setup LangSmith client
 client = Client()
@@ -37,7 +39,7 @@ Actual Response: {outputs}
 
 Rate the response quality (1-5):
 1. Completely incorrect or irrelevant
-2. Partially correct but missing key information  
+2. Partially correct but missing key information
 3. Mostly correct with minor issues
 4. Correct and helpful
 5. Excellent, comprehensive and accurate
@@ -57,6 +59,7 @@ response_quality_evaluator = create_llm_as_judge(
     model="openai:gpt-4o-mini",
 )
 
+
 def ls_target(inputs: dict) -> dict:
     """LangSmith target function that runs the text2sql agent"""
     try:
@@ -71,10 +74,11 @@ def ls_target(inputs: dict) -> dict:
     except Exception as e:
         return {"response": f"Error: {str(e)}"}
 
+
 @pytest.mark.evaluator
 def test_e2e_evaluation():
     """Run end-to-end evaluation using LangSmith"""
-    
+
     # Create dataset if it doesn't exist
     dataset_name = "text2sql-agent"
 
@@ -82,23 +86,23 @@ def test_e2e_evaluation():
     experiment_results = client.evaluate(
         ls_target,  # Your AI system
         data=dataset_name,  # The data to predict and grade over
-        evaluators=[correctness_evaluator, response_quality_evaluator],  # The evaluators to score the results
+        evaluators=[
+            correctness_evaluator,
+            response_quality_evaluator,
+        ],  # The evaluators to score the results
         max_concurrency=10,
         experiment_prefix="text2sql-agent-e2e",  # A prefix for your experiment names
     )
-    
+
     assert experiment_results is not None
     print(f"✅ Evaluation completed: {experiment_results.experiment_name}")
 
     # Define scoring rules for post-processing
-    criteria = {
-        "correctness": ">=0.8",
-        "response_quality": ">=3.5"
-    }
+    criteria = {"correctness": ">=0.8", "response_quality": ">=3.5"}
 
     output_metadata = {
         "experiment_name": experiment_results.experiment_name,
-        "criteria": criteria
+        "criteria": criteria,
     }
 
     safe_name = experiment_results.experiment_name.replace(":", "-").replace("/", "-")

@@ -1,5 +1,46 @@
+# Environment variables
 .env
+.env.local
+.env.*.local
+
+# Virtual environments
 venv/
 .venv/
+env/
+ENV/
+
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# Testing
+.pytest_cache/
+.ruff_cache/
+*.coverage
+*.coverage.*
+htmlcov/
+.tox/
+coverage.xml
+evaluation_config__*.json
+
+# LangGraph
 .langgraph_api/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

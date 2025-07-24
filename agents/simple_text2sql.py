@@ -1,15 +1,15 @@
-
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage, AnyMessage
-from langgraph.graph.message import add_messages
-from typing_extensions import TypedDict, List, Annotated
-from langgraph.graph import StateGraph, START, END
-from agents.utils import get_engine_for_chinook_db, get_detailed_table_info
-from langchain_community.utilities.sql_database import SQLDatabase
-
 from dotenv import load_dotenv
+from langchain_community.utilities.sql_database import SQLDatabase
+from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
+from langgraph.graph import END, START, StateGraph
+from langgraph.graph.message import add_messages
+from typing_extensions import Annotated, List, TypedDict
+
+from agents.utils import get_detailed_table_info, get_engine_for_chinook_db
 
 load_dotenv(override=True)
+
 
 class OverallState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
@@ -17,11 +17,14 @@ class OverallState(TypedDict):
     sql: str
     records: List[dict]
 
+
 class InputState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
 
+
 class OutputState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
+
 
 qa_system_prompt = """
 You are an assistant that helps to form nice and human understandable answers.
@@ -50,6 +53,7 @@ Do not include any text except the generated SQL statement.
 You will have the full message history to help you answer the question, if you dont need to generate a sql query, just generate a sql query that will return an empty result.
 """
 
+
 def generate_sql(llm):
     def _generate(state: OverallState) -> dict:
         last_message = state["messages"][-1]
@@ -58,27 +62,43 @@ def generate_sql(llm):
         Schema: {get_detailed_table_info()}
         SQL:
         """
-        sql_query = llm.invoke([SystemMessage(sql_system_prompt)] + state["messages"] + [HumanMessage(prompt)])
+        sql_query = llm.invoke(
+            [SystemMessage(sql_system_prompt)]
+            + state["messages"]
+            + [HumanMessage(prompt)]
+        )
         sql_query = sql_query.content.replace("```sql", "").replace("```", "")
         return {"sql": sql_query}
+
     return _generate
+
 
 def execute_sql(db):
     def _execute(state: OverallState) -> dict:
         records = db.run(state["sql"])
         return {"records": records}
+
     return _execute
+
 
 def generate_answer(llm):
     def _answer(state: OverallState) -> dict:
         last_message = state["messages"][-1]
         prompt = f"Given the question: {last_message.content} and the database results: {state['records']}, provide a concise answer."
-        answer = llm.invoke([SystemMessage(qa_system_prompt)] + state["messages"] + [HumanMessage(prompt)])
+        answer = llm.invoke(
+            [SystemMessage(qa_system_prompt)]
+            + state["messages"]
+            + [HumanMessage(prompt)]
+        )
         return {"messages": [answer]}
+
     return _answer
 
+
 def create_agent(llm, db):
-    builder = StateGraph(OverallState, input_schema=InputState, output_schema=OutputState)
+    builder = StateGraph(
+        OverallState, input_schema=InputState, output_schema=OutputState
+    )
     builder.add_node("generate_sql", generate_sql(llm))
     builder.add_node("execute_sql", execute_sql(db))
     builder.add_node("generate_answer", generate_answer(llm))
@@ -87,6 +107,7 @@ def create_agent(llm, db):
     builder.add_edge("execute_sql", "generate_answer")
     builder.add_edge("generate_answer", END)
     return builder.compile()
+
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 db = SQLDatabase(get_engine_for_chinook_db())

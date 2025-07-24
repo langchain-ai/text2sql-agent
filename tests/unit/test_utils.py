@@ -1,6 +1,8 @@
 import pytest
-from agents import utils
 from sqlalchemy import text
+
+from agents import utils
+
 
 @pytest.mark.utils
 def test_get_engine_for_chinook_db():
@@ -12,12 +14,14 @@ def test_get_engine_for_chinook_db():
     assert "Album" in tables
     assert "Artist" in tables
 
+
 @pytest.mark.utils
 def test_get_db_table_names():
     table_names = utils.get_db_table_names()
     assert isinstance(table_names, list)
     assert "Album" in table_names
     assert "Track" in table_names
+
 
 @pytest.mark.utils
 def test_get_detailed_table_info():
@@ -36,6 +40,7 @@ def test_get_detailed_table_info():
     assert isinstance(sample_data, str)
     assert sample_data.startswith("[")  # basic sanity check
     assert "For Those About To Rock" in sample_data  # verify content presence
+
 
 @pytest.mark.utils
 def test_get_schema_overview():

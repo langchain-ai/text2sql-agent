@@ -1,29 +1,33 @@
+import glob
 import json
 import operator
 import os
 import sys
-import glob
-from langsmith import Client
 from collections import defaultdict
+
+from langsmith import Client
 
 # Operator map for threshold comparisons
 OP_MAP = {
-    '>': operator.gt,
-    '<': operator.lt,
-    '>=': operator.ge,
-    '<=': operator.le,
-    '==': operator.eq,
-    '!=': operator.ne,
+    ">": operator.gt,
+    "<": operator.lt,
+    ">=": operator.ge,
+    "<=": operator.le,
+    "==": operator.eq,
+    "!=": operator.ne,
 }
+
 
 def parse_threshold(threshold_str):
     for symbol in sorted(OP_MAP.keys(), key=len, reverse=True):
         if threshold_str.startswith(symbol):
-            return OP_MAP[symbol], float(threshold_str[len(symbol):])
+            return OP_MAP[symbol], float(threshold_str[len(symbol) :])
     raise ValueError(f"Invalid threshold format: {threshold_str}")
+
 
 def format_score(value):
     return f"{value:.2f}" if value is not None else "N/A"
+
 
 def process_config(config_path, client):
     with open(config_path, "r") as f:
@@ -71,19 +75,26 @@ def process_config(config_path, client):
         f.write("|--------------|-----------|-----------|--------|\n")
         for row in table_rows:
             f.write(f"| {row[0]} | {row[1]} | {row[2]} | {row[3]} |\n")
-        
+
         total = num_passed + num_failed
-        summary = f"**✅ {num_passed} Passed, ❌ {num_failed} Failed**" if total else "No thresholds defined."
+        summary = (
+            f"**✅ {num_passed} Passed, ❌ {num_failed} Failed**"
+            if total
+            else "No thresholds defined."
+        )
         f.write(f"\n{summary}\n")
 
     print(f"✅ Processed {config_path}")
+
 
 # ---- Entry point ----
 
 client = Client()
 
 # Accept config paths via CLI or glob all matching files
-config_files = sys.argv[1:] if len(sys.argv) > 1 else glob.glob("evaluation_config__*.json")
+config_files = (
+    sys.argv[1:] if len(sys.argv) > 1 else glob.glob("evaluation_config__*.json")
+)
 
 if not config_files:
     print("❌ No evaluation config files found.")

@@ -112,7 +112,7 @@ graph TD
     D1 --> E1[Evaluate with OpenEvals or AgentEvals]
     D1 --> E2[Assertions: Hard and Soft]
 
-    E1 --> F1[Push to Staging Deployment]
+    E1 --> F1[Push to Staging Deployment - Spin new Docker deployment in LGP as Development Type]
     E2 --> F1
 
     F1 --> G1[Run Online Evaluations on Live Data]
@@ -123,13 +123,15 @@ graph TD
     I1 --> J2[Trigger Alert via Webhook]
     I1 --> J3[Push Trace to Golden Dataset]
 
-    F1 --> K1[Promote to Production if All Pass]
+    F1 --> K1[Promote to Production if All Pass - Spin Production Deployment in LGP]
+
     J2 --> L1[Slack or PagerDuty Notification]
 
     subgraph Manual Review
         J1 --> M1[Human Labeling]
         M1 --> J3
     end
+
 ```
 
 ### Pipeline Stages

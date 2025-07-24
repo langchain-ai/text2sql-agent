@@ -17,8 +17,6 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11"]
-    outputs:
-      python-version: ${{ matrix.python-version }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -42,6 +40,7 @@ jobs:
       run: uv sync
 
   quality-checks:
+    needs: setup
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -67,14 +66,13 @@ jobs:
         key: ${{ runner.os }}-uv-comprehensive-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-uv-comprehensive-
-    - name: Install dependencies
-      run: uv sync
     - name: Run Linting and Formatting Checks
       run: make lint
     - name: Run Pre-Commit Hooks
       run: make pre-commit
 
   test-coverage:
+    needs: setup
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -102,8 +100,6 @@ jobs:
         key: ${{ runner.os }}-uv-comprehensive-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-uv-comprehensive-
-    - name: Install dependencies
-      run: uv sync
     - name: Run Tests with Coverage
       run: make test
 
@@ -136,8 +132,6 @@ jobs:
         key: ${{ runner.os }}-uv-comprehensive-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-uv-comprehensive-
-    - name: Install dependencies
-      run: uv sync
     - name: Run unit tests
       run: uv run pytest tests/unit/ --junitxml=unit-results.xml
       continue-on-error: false
@@ -176,8 +170,6 @@ jobs:
         key: ${{ runner.os }}-uv-comprehensive-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-uv-comprehensive-
-    - name: Install dependencies
-      run: uv sync
     - name: Run integration tests
       run: uv run pytest tests/integrations/ --junitxml=integration-results.xml
       continue-on-error: false
@@ -217,8 +209,6 @@ jobs:
         key: ${{ runner.os }}-uv-comprehensive-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-uv-comprehensive-
-    - name: Install dependencies
-      run: uv sync
     - name: Run evaluation tests
       run: uv run pytest -m evaluator --junitxml=evaluator-results.xml
       continue-on-error: false
@@ -306,8 +296,6 @@ jobs:
         key: ${{ runner.os }}-uv-comprehensive-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-uv-comprehensive-
-    - name: Install dependencies
-      run: uv sync
     - name: Run e2e tests
       run: uv run pytest tests/e2e/ --junitxml=e2e-results.xml
       continue-on-error: false

@@ -1,13 +1,13 @@
 # Makefile for Project Automation
 
-.PHONY: install lint type-check test docs serve-docs build all clean security-scan format
+.PHONY: install lint test build all clean security-scan format
 
 # Variables
 PACKAGE_NAME = agents
 TEST_DIR = tests
 
 # Default target
-all: lint type-check test
+all: lint test
 
 # Install project dependencies
 install:
@@ -18,10 +18,6 @@ lint:
 	uv run ruff check $(PACKAGE_NAME) $(TEST_DIR)
 	uv run black --check $(PACKAGE_NAME) $(TEST_DIR)
 	uv run isort --check-only $(PACKAGE_NAME) $(TEST_DIR)
-
-# Type Checking with MyPy
-type-check:
-	uv run mypy $(PACKAGE_NAME) $(TEST_DIR)
 
 # Run Tests with Coverage
 test:

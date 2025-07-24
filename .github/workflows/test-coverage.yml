@@ -16,6 +16,10 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11"]
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+      LANGSMITH_TRACING: ${{ secrets.LANGSMITH_TRACING }}
     steps:
     - uses: actions/checkout@v4
 
@@ -45,14 +49,14 @@ jobs:
     - name: Run Tests with Coverage
       run: make test
 
-    - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        files: coverage.xml
-        fail_ci_if_error: false
-        token: ${{ secrets.CODECOV_TOKEN }}
-        flags: unittests
-        name: codecov-umbrella
+    # - name: Upload Coverage to Codecov
+    #   uses: codecov/codecov-action@v3
+    #   with:
+    #     files: coverage.xml
+    #     fail_ci_if_error: false
+    #     token: ${{ secrets.CODECOV_TOKEN }}
+    #     flags: unittests
+    #     name: codecov-umbrella
 
     - name: Comment PR with coverage results
       if: github.event_name == 'pull_request'

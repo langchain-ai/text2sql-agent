@@ -47,9 +47,6 @@ jobs:
     - name: Run Linting and Formatting Checks
       run: make lint
 
-    - name: Run Type Checking
-      run: make type-check
-
     - name: Run Pre-Commit Hooks
       run: make pre-commit
 

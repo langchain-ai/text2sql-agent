@@ -12,6 +12,13 @@ env:
   REGISTRY: docker.io
   IMAGE_NAME: perinim98/text2sql-agent
   LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+# Add permissions for PR comments
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   preview-deployment:
@@ -68,6 +75,9 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Install requests
+      run: pip install requests
+
     # Deploy to LangGraph as preview
     - name: Deploy preview to LangGraph
       run: |
@@ -75,7 +85,43 @@ jobs:
           --action deploy-preview \
           --pr-number ${{ github.event.pull_request.number }} \
           --image-uri ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:preview-${{ github.event.pull_request.number }} \
-          --api-key ${{ secrets.LANGSMITH_API_KEY }}
+          --api-key ${{ secrets.LANGSMITH_API_KEY }} \
+          --openai-api-key ${{ secrets.OPENAI_API_KEY }}
+
+    # Generate deployment status report
+    - name: Generate deployment status report
+      run: |
+        python .github/scripts/report_deployment.py \
+          --deployment-name text2sql-agent-pr-${{ github.event.pull_request.number }} \
+          --image-uri ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:preview-${{ github.event.pull_request.number }} \
+          --deployment-type preview
+
+    # Comment PR with deployment status
+    - name: Comment PR with deployment status
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+
+          try {
+            const comment = fs.readFileSync('deployment_comment.md', 'utf8');
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Failed to read deployment comment file:', error.message);
+            // Fallback comment
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **Preview Deployment Status**\n\n✅ Preview deployment completed!\n🔗 Preview URL: https://text2sql-agent-pr-${{ github.event.pull_request.number }}.langchain.dev\n📦 Docker image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:preview-${{ github.event.pull_request.number }}`
+            });
+          }
 
     - name: Preview deployment success
       run: |

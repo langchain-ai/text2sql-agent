@@ -17,8 +17,10 @@ class LangGraphAPI:
 
     def __init__(self, api_key: str):
         self.api_key = api_key
+        # Use the same endpoint as the working script
         self.base_url = "https://gtm.smith.langchain.dev/api-host/v2"
-        self.headers = {"X-API-Key": api_key, "Content-Type": "application/json"}
+        # Fix header name to match working script
+        self.headers = {"X-Api-Key": api_key, "Content-Type": "application/json"}
 
     def list_deployments(self, name_contains: Optional[str] = None) -> Dict[str, Any]:
         """List deployments with optional name filter."""
@@ -48,6 +50,7 @@ class LangGraphAPI:
                 print("❌ OPENAI_API_KEY not found in environment variables")
                 sys.exit(1)
 
+        # Updated payload structure based on working script
         payload = {
             "name": name,
             "source": "external_docker",
@@ -59,7 +62,9 @@ class LangGraphAPI:
                     "memory_mb": 2048,
                 }
             },
-            "source_revision_config": {"image_uri": image_uri},
+            "source_revision_config": {
+                "image_uri": image_uri,
+            },
             "secrets": [
                 {
                     "name": "OPENAI_API_KEY",
@@ -89,7 +94,11 @@ class LangGraphAPI:
 
     def update_deployment(self, deployment_id: str, image_uri: str) -> Dict[str, Any]:
         """Update deployment with new image (creates new revision)."""
-        payload = {"source_revision_config": {"image_uri": image_uri}}
+        payload = {
+            "source_revision_config": {
+                "image_uri": image_uri,
+            }
+        }
 
         print(
             f"📤 Sending update request to: {self.base_url}/deployments/{deployment_id}"

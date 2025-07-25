@@ -19,7 +19,8 @@ class DeploymentReporter:
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.base_url = "https://gtm.smith.langchain.dev/api-host/v2"
-        self.headers = {"X-API-Key": api_key, "Content-Type": "application/json"}
+        # Fix header name to match working script
+        self.headers = {"X-Api-Key": api_key, "Content-Type": "application/json"}
 
     def get_deployment_status(self, deployment_name: str) -> Optional[Dict[str, Any]]:
         """Get deployment status by name."""

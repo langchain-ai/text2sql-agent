@@ -138,7 +138,7 @@ class LangGraphAPI:
             f"{self.base_url}/deployments/{deployment_id}", headers=self.headers
         )
 
-        if response.status_code == 200:
+        if response.status_code == 204:
             return True
         else:
             print(f"❌ Failed to delete deployment: {response.status_code}")

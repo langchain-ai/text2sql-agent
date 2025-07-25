@@ -68,6 +68,9 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Install requests
+      run: pip install requests
+
     # Deploy to LangGraph as preview
     - name: Deploy preview to LangGraph
       run: |

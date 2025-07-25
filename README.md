@@ -89,7 +89,7 @@ If you enable the GitHub Actions workflow, make sure to set the following enviro
 - **`LANGSMITH_TRACING=true`**: Enable LangSmith tracing
 
 
-The workflow will automatically run tests and evaluations on pull requests and pushes to main/develop branches.
+The workflow will automatically run tests and evaluations on pull requests and pushes to main/develop branches
 
 ## 🔄 CI/CD Pipeline
 

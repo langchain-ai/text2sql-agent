@@ -12,6 +12,7 @@ env:
   REGISTRY: docker.io
   IMAGE_NAME: perinim98/text2sql-agent
   LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
 jobs:
   preview-deployment:
@@ -78,7 +79,8 @@ jobs:
           --action deploy-preview \
           --pr-number ${{ github.event.pull_request.number }} \
           --image-uri ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:preview-${{ github.event.pull_request.number }} \
-          --api-key ${{ secrets.LANGSMITH_API_KEY }}
+          --api-key ${{ secrets.LANGSMITH_API_KEY }} \
+          --openai-api-key ${{ secrets.OPENAI_API_KEY }}
 
     - name: Preview deployment success
       run: |

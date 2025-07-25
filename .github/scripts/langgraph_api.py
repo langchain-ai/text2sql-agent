@@ -5,6 +5,7 @@ Handles preview deployments, production deployments, and cleanup.
 """
 
 import argparse
+import os
 import sys
 from typing import Any, Dict, Optional
 
@@ -36,8 +37,17 @@ class LangGraphAPI:
             print(f"Response: {response.text}")
             sys.exit(1)
 
-    def create_deployment(self, name: str, image_uri: str) -> Dict[str, Any]:
+    def create_deployment(
+        self, name: str, image_uri: str, openai_api_key: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Create a new deployment."""
+        # Get OpenAI API key from environment if not provided
+        if openai_api_key is None:
+            openai_api_key = os.environ.get("OPENAI_API_KEY")
+            if not openai_api_key:
+                print("❌ OPENAI_API_KEY not found in environment variables")
+                sys.exit(1)
+
         payload = {
             "name": name,
             "source": "external_docker",
@@ -53,25 +63,38 @@ class LangGraphAPI:
             "secrets": [
                 {
                     "name": "OPENAI_API_KEY",
-                    "value": "{{OPENAI_API_KEY}}",  # Will be replaced by LangGraph
+                    "value": openai_api_key,
                 }
             ],
         }
 
+        print(f"📤 Sending deployment request to: {self.base_url}/deployments")
+        print(f"📦 Payload: {payload}")
+
         response = requests.post(
             f"{self.base_url}/deployments", headers=self.headers, json=payload
         )
+
+        print(f"📥 Response status: {response.status_code}")
+        print(f"📥 Response headers: {dict(response.headers)}")
 
         if response.status_code in [200, 201]:
             return response.json()
         else:
             print(f"❌ Failed to create deployment: {response.status_code}")
             print(f"Response: {response.text}")
+            print(f"Request URL: {response.url}")
+            print(f"Request headers: {dict(response.request.headers)}")
             sys.exit(1)
 
     def update_deployment(self, deployment_id: str, image_uri: str) -> Dict[str, Any]:
         """Update deployment with new image (creates new revision)."""
         payload = {"source_revision_config": {"image_uri": image_uri}}
+
+        print(
+            f"📤 Sending update request to: {self.base_url}/deployments/{deployment_id}"
+        )
+        print(f"📦 Payload: {payload}")
 
         response = requests.patch(
             f"{self.base_url}/deployments/{deployment_id}",
@@ -79,11 +102,16 @@ class LangGraphAPI:
             json=payload,
         )
 
+        print(f"📥 Response status: {response.status_code}")
+        print(f"📥 Response headers: {dict(response.headers)}")
+
         if response.status_code == 200:
             return response.json()
         else:
             print(f"❌ Failed to update deployment: {response.status_code}")
             print(f"Response: {response.text}")
+            print(f"Request URL: {response.url}")
+            print(f"Request headers: {dict(response.request.headers)}")
             sys.exit(1)
 
     def delete_deployment(self, deployment_id: str) -> bool:
@@ -196,6 +224,10 @@ def main():
     parser.add_argument("--api-key", required=True, help="LangGraph API key")
     parser.add_argument("--pr-number", type=int, help="PR number (for preview actions)")
     parser.add_argument("--image-uri", help="Docker image URI")
+    parser.add_argument(
+        "--openai-api-key",
+        help="OpenAI API key (optional, will use env var if not provided)",
+    )
 
     args = parser.parse_args()
 

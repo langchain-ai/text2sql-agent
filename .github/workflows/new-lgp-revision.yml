@@ -11,6 +11,8 @@ env:
   PYTHON_VERSION: '3.11'
   REGISTRY: docker.io
   IMAGE_NAME: perinim98/text2sql-agent
+  LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
 jobs:
   # Job 1: Cleanup preview deployment
@@ -145,12 +147,16 @@ jobs:
     - name: Install dependencies
       run: uv sync
 
+    - name: Install requests
+      run: pip install requests
+
     - name: Deploy to production
       run: |
         python .github/scripts/langgraph_api.py \
           --action deploy-production \
           --image-uri ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-          --api-key ${{ secrets.LANGSMITH_API_KEY }}
+          --api-key ${{ secrets.LANGSMITH_API_KEY }} \
+          --openai-api-key ${{ secrets.OPENAI_API_KEY }}
 
     - name: Production deployment success
       run: |

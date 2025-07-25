@@ -61,10 +61,10 @@ class LangGraphAPI:
                 "build_on_push": None,
                 "custom_url": None,
                 "resource_spec": {
-                    "min_scale": 0,
+                    "min_scale": 1,
                     "max_scale": 1,
-                    "cpu": 1000,
-                    "memory_mb": 2048,
+                    "cpu": 1,
+                    "memory_mb": 1024,
                 },
             },
             "source_revision_config": {

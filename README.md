@@ -93,7 +93,7 @@ The workflow will automatically run tests and evaluations on pull requests and p
 
 ## 🔄 CI/CD Pipeline
 
-CI/CD pipeline to ensure quality and reliability through multiple testing layers and evaluations:
+CI/CD pipeline to ensure quality and reliability through multiple testing layers and evaluations
 
 ```mermaid
 graph TD

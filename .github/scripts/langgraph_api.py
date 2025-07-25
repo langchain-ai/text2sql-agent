@@ -57,7 +57,7 @@ class LangGraphAPI:
             "source_config": {
                 "integration_id": None,
                 "repo_url": None,
-                "deployment_type": "dev",
+                "deployment_type": None,
                 "build_on_push": None,
                 "custom_url": None,
                 "resource_spec": None,

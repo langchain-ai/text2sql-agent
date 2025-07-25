@@ -55,6 +55,9 @@ jobs:
     - name: Install dependencies
       run: uv sync
 
+    - name: Install requests
+      run: pip install requests
+
     - name: Cleanup preview deployment
       run: |
         python .github/scripts/langgraph_api.py \

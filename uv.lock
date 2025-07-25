@@ -2314,6 +2314,7 @@ dependencies = [
     { name = "langgraph" },
     { name = "langgraph-cli", extra = ["inmem"] },
     { name = "python-dotenv" },
+    { name = "requests" },
     { name = "sqlalchemy" },
 ]
 
@@ -2353,6 +2354,7 @@ requires-dist = [
     { name = "langgraph", specifier = ">=0.4.7" },
     { name = "langgraph-cli", extras = ["inmem"], specifier = ">=0.0.19" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
+    { name = "requests", specifier = ">=2.31.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = "==6.0" },
     { name = "sqlalchemy", specifier = ">=2.0.41" },
 ]

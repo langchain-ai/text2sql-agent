@@ -254,7 +254,7 @@ jobs:
 
     - name: Run LangSmith evaluation report
       run: |
-        python .github/scripts/report_eval.py evaluation_config__*.json
+        python .github/scripts/report_eval.py --verbose evaluation_config__*.json
 
 
     - name: Comment PR with evaluation summary

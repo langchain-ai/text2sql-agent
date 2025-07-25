@@ -1,0 +1,159 @@
+name: Production Deployment & Cleanup
+
+# Trigger on PR close/merge to main
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
+
+# Set environment variables
+env:
+  PYTHON_VERSION: '3.11'
+  REGISTRY: docker.io
+  IMAGE_NAME: perinim98/text2sql-agent
+
+jobs:
+  # Job 1: Cleanup preview deployment
+  cleanup-preview:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          .uv/cache
+          .venv
+        key: ${{ runner.os }}-uv-cleanup-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-cleanup-
+
+    - name: Install dependencies
+      run: uv sync
+
+    - name: Cleanup preview deployment
+      run: |
+        python .github/scripts/langgraph_api.py \
+          --action cleanup-preview \
+          --pr-number ${{ github.event.pull_request.number }} \
+          --api-key ${{ secrets.LANGSMITH_API_KEY }}
+
+  # Job 2: Build and push production Docker image (only if PR was merged)
+  build-and-push:
+    needs: cleanup-preview
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=raw,value=latest
+          type=sha,prefix=main-
+        labels: |
+          org.opencontainers.image.title=Text2SQL Agent
+          org.opencontainers.image.description=Text-to-SQL Agent built with LangGraph
+          org.opencontainers.image.vendor=Text2SQL Agent
+
+    - name: Build and push production Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./dockerfiles/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        platforms: linux/amd64,linux/arm64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+          BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+          VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
+    - name: Output image details
+      run: |
+        echo "🐳 Production Docker image built and pushed successfully!"
+        echo "📦 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+        echo "🏷️  Tags: ${{ steps.meta.outputs.tags }}"
+
+  # Job 3: Deploy to production (only if PR was merged)
+  deploy-production:
+    needs: [cleanup-preview, build-and-push]
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          .uv/cache
+          .venv
+        key: ${{ runner.os }}-uv-prod-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-prod-
+
+    - name: Install dependencies
+      run: uv sync
+
+    - name: Deploy to production
+      run: |
+        python .github/scripts/langgraph_api.py \
+          --action deploy-production \
+          --image-uri ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          --api-key ${{ secrets.LANGSMITH_API_KEY }}
+
+    - name: Production deployment success
+      run: |
+        echo "✅ Production deployment completed!"
+        echo "🔗 Production URL: https://text2sql-agent-prod.langchain.dev"
+        echo "📦 Docker image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"

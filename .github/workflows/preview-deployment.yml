@@ -1,0 +1,84 @@
+name: Preview Deployment
+
+# Trigger on PR open, sync, or reopen
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+# Set environment variables
+env:
+  PYTHON_VERSION: '3.11'
+  REGISTRY: docker.io
+  IMAGE_NAME: perinim98/text2sql-agent
+  LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+
+jobs:
+  preview-deployment:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+      with:
+        version: "latest"
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          .uv/cache
+          .venv
+        key: ${{ runner.os }}-uv-preview-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-preview-
+
+    - name: Install dependencies
+      run: uv sync
+
+    # Build and push Docker image with preview tag
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push preview Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./dockerfiles/Dockerfile
+        push: true
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:preview-${{ github.event.pull_request.number }}
+        platforms: linux/amd64,linux/arm64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    # Deploy to LangGraph as preview
+    - name: Deploy preview to LangGraph
+      run: |
+        python .github/scripts/langgraph_api.py \
+          --action deploy-preview \
+          --pr-number ${{ github.event.pull_request.number }} \
+          --image-uri ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:preview-${{ github.event.pull_request.number }} \
+          --api-key ${{ secrets.LANGSMITH_API_KEY }}
+
+    - name: Preview deployment success
+      run: |
+        echo "✅ Preview deployment completed!"
+        echo "🔗 Preview URL will be available at: https://text2sql-agent-pr-${{ github.event.pull_request.number }}.langchain.dev"
+        echo "📦 Docker image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:preview-${{ github.event.pull_request.number }}"

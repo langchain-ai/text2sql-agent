@@ -41,7 +41,8 @@ dependencies = [
     "langgraph-cli[inmem]>=0.0.19",
     "langchain-anthropic>=0.3.13",
     "langchain-community>=0.3.27",
-    "sqlalchemy>=2.0.41"
+    "sqlalchemy>=2.0.41",
+    "requests>=2.31.0"
 ]
 
 [project.optional-dependencies]

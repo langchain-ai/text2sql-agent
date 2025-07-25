@@ -158,6 +158,41 @@ jobs:
           --api-key ${{ secrets.LANGSMITH_API_KEY }} \
           --openai-api-key ${{ secrets.OPENAI_API_KEY }}
 
+    # Generate deployment status report
+    - name: Generate deployment status report
+      run: |
+        python .github/scripts/report_deployment.py \
+          --deployment-name text2sql-agent-prod \
+          --image-uri ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          --deployment-type production
+
+    # Comment PR with deployment status
+    - name: Comment PR with production deployment status
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+
+          try {
+            const comment = fs.readFileSync('deployment_comment.md', 'utf8');
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Failed to read deployment comment file:', error.message);
+            // Fallback comment
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **Production Deployment Status**\n\n✅ Production deployment completed!\n🔗 Production URL: https://text2sql-agent-prod.langchain.dev\n📦 Docker image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest`
+            });
+          }
+
     - name: Production deployment success
       run: |
         echo "✅ Production deployment completed!"

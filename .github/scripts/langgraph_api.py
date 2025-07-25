@@ -60,7 +60,12 @@ class LangGraphAPI:
                 "deployment_type": None,
                 "build_on_push": None,
                 "custom_url": None,
-                "resource_spec": None,
+                "resource_spec": {
+                    "min_scale": 0,
+                    "max_scale": 1,
+                    "cpu": 1000,
+                    "memory_mb": 2048,
+                },
             },
             "source_revision_config": {
                 "repo_ref": None,

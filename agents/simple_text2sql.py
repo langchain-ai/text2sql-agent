@@ -6,6 +6,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import Annotated, List, TypedDict
 
+from agents.prompts import QA_SYSTEM_PROMPT, SQL_SYSTEM_PROMPT
 from agents.utils import get_detailed_table_info, get_engine_for_chinook_db
 
 load_dotenv(override=True)
@@ -26,34 +27,6 @@ class OutputState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
 
 
-qa_system_prompt = """
-You are an assistant that helps to form nice and human understandable answers.
-The information part contains the provided information that you must use to construct an answer.
-The provided information is authoritative, you must never doubt it or try to use your internal knowledge to correct it.
-Make the answer sound as a response to the question. Do not mention that you based the result on the given information.
-Here is an example:
-
-Question: How many songs do you have by James Brown?
-Context:[20]
-Helpful Answer: We have 20 songs by James Brown.
-
-Follow this example when generating answers.
-If the provided information is empty, say that you don't know the answer.
-You will have the full message history to help you answer the question, if you need more information, ask the user for it.
-"""
-
-sql_system_prompt = """
-Task: Generate SQL statement to query a database.
-Instructions:
-Use only the provided relationship types and properties in the schema.
-Do not use any other relationship types or properties that are not provided.
-Note: Do not include any explanations or apologies in your responses.
-Do not respond to any questions that might ask anything else than for you to construct a SQL statement.
-Do not include any text except the generated SQL statement.
-You will have the full message history to help you answer the question, if you dont need to generate a sql query, just generate a sql query that will return an empty result.
-"""
-
-
 def generate_sql(llm):
     def _generate(state: OverallState) -> dict:
         last_message = state["messages"][-1]
@@ -63,7 +36,7 @@ def generate_sql(llm):
         SQL:
         """
         sql_query = llm.invoke(
-            [SystemMessage(sql_system_prompt)]
+            [SystemMessage(SQL_SYSTEM_PROMPT)]
             + state["messages"]
             + [HumanMessage(prompt)]
         )
@@ -86,7 +59,7 @@ def generate_answer(llm):
         last_message = state["messages"][-1]
         prompt = f"Given the question: {last_message.content} and the database results: {state['records']}, provide a concise answer."
         answer = llm.invoke(
-            [SystemMessage(qa_system_prompt)]
+            [SystemMessage(QA_SYSTEM_PROMPT)]
             + state["messages"]
             + [HumanMessage(prompt)]
         )

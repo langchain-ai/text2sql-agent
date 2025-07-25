@@ -57,14 +57,18 @@ def test_payload_structure():
         "name": test_name,
         "source": "external_docker",
         "source_config": {
-            "resource_spec": {
-                "min_scale": 0,
-                "max_scale": 1,
-                "cpu": 1000,
-                "memory_mb": 2048,
-            }
+            "integration_id": None,
+            "repo_url": None,
+            "deployment_type": None,
+            "build_on_push": None,
+            "custom_url": None,
+            "resource_spec": None,
         },
-        "source_revision_config": {"image_uri": test_image},
+        "source_revision_config": {
+            "repo_ref": None,
+            "langgraph_config_path": None,
+            "image_uri": test_image,
+        },
         "secrets": [
             {
                 "name": "OPENAI_API_KEY",
@@ -76,9 +80,7 @@ def test_payload_structure():
     print("📦 Test payload structure:")
     print(f"   - name: {payload['name']}")
     print(f"   - source: {payload['source']}")
-    print(
-        f"   - source_config.resource_spec: {payload['source_config']['resource_spec']}"
-    )
+    print(f"   - source_config: {payload['source_config']}")
     print(f"   - source_revision_config: {payload['source_revision_config']}")
     print(f"   - secrets: {len(payload['secrets'])} secret(s)")
 

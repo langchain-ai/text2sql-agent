@@ -50,19 +50,21 @@ class LangGraphAPI:
                 print("❌ OPENAI_API_KEY not found in environment variables")
                 sys.exit(1)
 
-        # Updated payload structure based on working script
-        payload = {
+        # Match the working script structure exactly, but for external_docker
+        request_body = {
             "name": name,
             "source": "external_docker",
             "source_config": {
-                "resource_spec": {
-                    "min_scale": 0,
-                    "max_scale": 1,
-                    "cpu": 1000,
-                    "memory_mb": 2048,
-                }
+                "integration_id": None,
+                "repo_url": None,
+                "deployment_type": "dev",
+                "build_on_push": None,
+                "custom_url": None,
+                "resource_spec": None,
             },
             "source_revision_config": {
+                "repo_ref": None,
+                "langgraph_config_path": None,
                 "image_uri": image_uri,
             },
             "secrets": [
@@ -74,10 +76,10 @@ class LangGraphAPI:
         }
 
         print(f"📤 Sending deployment request to: {self.base_url}/deployments")
-        print(f"📦 Payload: {payload}")
+        print(f"📦 Payload: {request_body}")
 
         response = requests.post(
-            f"{self.base_url}/deployments", headers=self.headers, json=payload
+            f"{self.base_url}/deployments", headers=self.headers, json=request_body
         )
 
         print(f"📥 Response status: {response.status_code}")
@@ -94,8 +96,10 @@ class LangGraphAPI:
 
     def update_deployment(self, deployment_id: str, image_uri: str) -> Dict[str, Any]:
         """Update deployment with new image (creates new revision)."""
-        payload = {
+        request_body = {
             "source_revision_config": {
+                "repo_ref": None,
+                "langgraph_config_path": None,
                 "image_uri": image_uri,
             }
         }
@@ -103,12 +107,12 @@ class LangGraphAPI:
         print(
             f"📤 Sending update request to: {self.base_url}/deployments/{deployment_id}"
         )
-        print(f"📦 Payload: {payload}")
+        print(f"📦 Payload: {request_body}")
 
         response = requests.patch(
             f"{self.base_url}/deployments/{deployment_id}",
             headers=self.headers,
-            json=payload,
+            json=request_body,
         )
 
         print(f"📥 Response status: {response.status_code}")

@@ -10,7 +10,7 @@ Context:[20]
 Helpful Answer: We have 20 songs by James Brown.
 
 Follow this example when generating answers.
-If the provided information is empty, say that you don't know the answer.
+If the provided information is empty, just say that you don't know the answer.
 You will have the full message history to help you answer the question, if you need more information, ask the user for it.
 """
 
